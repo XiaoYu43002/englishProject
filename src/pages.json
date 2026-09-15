@@ -1,0 +1,21 @@
+{
+  "pages": [
+    { "path": "pages/splash/index", "style": { "navigationStyle": "custom" } },
+    { "path": "pages/login/index", "style": { "navigationStyle": "custom" } },
+    { "path": "pages/home/index", "style": { "navigationStyle": "custom" } },
+    { "path": "pages/semantic/index", "style": { "navigationStyle": "custom" } },
+    { "path": "pages/books/index", "style": { "navigationStyle": "custom" } },
+    { "path": "pages/book-detail/index", "style": { "navigationStyle": "custom" } },
+    { "path": "pages/scan/index", "style": { "navigationStyle": "custom" } },
+    { "path": "pages/word/index", "style": { "navigationStyle": "custom" } },
+    { "path": "pages/sentence/index", "style": { "navigationStyle": "custom" } },
+    { "path": "pages/profile/index", "style": { "navigationStyle": "custom" } },
+    { "path": "pages/pronunciation-settings/index", "style": { "navigationStyle": "custom" } }
+  ],
+  "globalStyle": {
+    "navigationBarTextStyle": "black",
+    "navigationBarTitleText": "知觅英语",
+    "navigationBarBackgroundColor": "#F8F5E9",
+    "backgroundColor": "#F8F5E9"
+  }
+}

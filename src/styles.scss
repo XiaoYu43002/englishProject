@@ -1,0 +1,148 @@
+$paper: #f8f5e9;
+$paper-light: #fffdf8;
+$ink: #1f2421;
+$green: #1f4d3a;
+$green-soft: #3d7564;
+$sage: #a7b89f;
+$gold: #d4b574;
+$border: #e0dccf;
+$muted: #6e786f;
+
+:root,
+page {
+  --paper: #{$paper};
+  --paper-light: #{$paper-light};
+  --ink: #{$ink};
+  --green: #{$green};
+  --green-soft: #{$green-soft};
+  --sage: #{$sage};
+  --gold: #{$gold};
+  --border: #{$border};
+  --muted: #{$muted};
+  color: $ink;
+  font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+  font-size: 14px;
+}
+
+view,
+text,
+image,
+button {
+  box-sizing: border-box;
+}
+
+button::after {
+  border: 0;
+}
+
+.screen {
+  min-height: 100vh;
+  padding: calc(env(safe-area-inset-top) + 40px) 24px calc(env(safe-area-inset-bottom) + 72px);
+  background: $paper;
+  position: relative;
+  overflow-x: hidden;
+  /* 内容超出时由页面自然滑动，不裁切、不单独开滚动容器 */
+  overflow-y: visible;
+  -webkit-overflow-scrolling: touch;
+}
+
+.screen--plain {
+  padding-top: calc(env(safe-area-inset-top) + 44px);
+}
+
+.eyebrow {
+  display: block;
+  color: $green-soft;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+}
+
+.page-title {
+  display: block;
+  margin-top: 12px;
+  color: $ink;
+  font-size: 30px;
+  line-height: 1.22;
+  font-weight: 700;
+}
+
+.page-subtitle {
+  display: block;
+  margin-top: 10px;
+  color: $muted;
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+.section-title {
+  display: block;
+  color: $ink;
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.card {
+  background: rgba(255, 253, 248, 0.9);
+  border: 1px solid rgba(224, 220, 207, 0.9);
+  border-radius: 18px;
+  box-shadow: 0 8px 24px rgba(31, 77, 58, 0.06);
+}
+
+.primary-button,
+.secondary-button {
+  width: 100%;
+  height: 52px;
+  border-radius: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 52px;
+}
+
+.primary-button {
+  color: #fff;
+  background: $green;
+  box-shadow: 0 10px 24px rgba(31, 77, 58, 0.18);
+}
+
+.secondary-button {
+  color: $ink;
+  background: $paper-light;
+  border: 1px solid $border;
+}
+
+.pressable {
+  transition: transform 160ms ease, opacity 160ms ease;
+}
+
+.pressable:active {
+  transform: scale(0.98);
+  opacity: 0.88;
+}
+
+.brand-orb {
+  position: absolute;
+  border-radius: 999px;
+  filter: blur(1px);
+  opacity: 0.35;
+  pointer-events: none;
+}
+
+.brand-orb--one {
+  width: 180px;
+  height: 180px;
+  right: -80px;
+  top: 80px;
+  background: rgba(167, 184, 159, 0.35);
+}
+
+.brand-orb--two {
+  width: 220px;
+  height: 220px;
+  left: -120px;
+  bottom: 80px;
+  background: rgba(212, 181, 116, 0.15);
+}

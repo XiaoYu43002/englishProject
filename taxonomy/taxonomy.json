@@ -1,0 +1,74 @@
+[
+  {
+    "id": "cognition",
+    "order": 1,
+    "name": "认知与思维",
+    "slot": "感知·理解·记忆"
+  },
+  {
+    "id": "expression",
+    "order": 2,
+    "name": "表达与观点",
+    "slot": "语言·观点·交流"
+  },
+  {
+    "id": "relation",
+    "order": 3,
+    "name": "因果与关系",
+    "slot": "原因·结果·连接"
+  },
+  {
+    "id": "change",
+    "order": 4,
+    "name": "变化与发展",
+    "slot": "变化·增长·演进"
+  },
+  {
+    "id": "control",
+    "order": 5,
+    "name": "控制与影响",
+    "slot": "控制·管理·影响"
+  },
+  {
+    "id": "action",
+    "order": 6,
+    "name": "行动与选择",
+    "slot": "行动·选择·执行"
+  },
+  {
+    "id": "judgment",
+    "order": 7,
+    "name": "判断与评价",
+    "slot": "判断·价值·评价"
+  },
+  {
+    "id": "state",
+    "order": 8,
+    "name": "状态与存在",
+    "slot": "状态·属性·存在"
+  },
+  {
+    "id": "society",
+    "order": 9,
+    "name": "社会与个体",
+    "slot": "社会·群体·个体"
+  },
+  {
+    "id": "economy",
+    "order": 10,
+    "name": "经济与资源",
+    "slot": "经济·工作·资源"
+  },
+  {
+    "id": "time",
+    "order": 11,
+    "name": "时间与过程",
+    "slot": "时间·顺序·过程"
+  },
+  {
+    "id": "quantity",
+    "order": 12,
+    "name": "程度·范围·数量",
+    "slot": "数量·范围·程度"
+  }
+]

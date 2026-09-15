@@ -1,0 +1,51 @@
+{
+  "name": "知觅英语",
+  "appid": "__UNI__ZHIMI01",
+  "description": "让单词有迹可循",
+  "versionName": "1.2.0",
+  "versionCode": "120",
+  "transformPx": false,
+  "app-plus": {
+    "usingComponents": true,
+    "nvueStyleCompiler": "uni-app",
+    "compilerVersion": 3,
+    "splashscreen": {
+      "alwaysShowBeforeRender": true,
+      "waiting": true,
+      "autoclose": true,
+      "delay": 0
+    },
+    "distribute": {
+      "android": {
+        "packagename": "com.zhimi.english",
+        "minSdkVersion": 23,
+        "targetSdkVersion": 35,
+        "usesCleartextTraffic": true,
+        "permissions": [
+          "<uses-permission android:name=\"android.permission.CAMERA\"/>",
+          "<uses-permission android:name=\"android.permission.INTERNET\"/>",
+          "<uses-permission android:name=\"android.permission.READ_MEDIA_IMAGES\"/>",
+          "<uses-permission android:name=\"android.permission.READ_EXTERNAL_STORAGE\" android:maxSdkVersion=\"32\"/>"
+        ]
+      }
+    }
+  },
+  "mp-weixin": {
+    "appid": "wxc32c5b80069928d7",
+    "setting": {
+      "urlCheck": false,
+      "es6": true,
+      "minified": true
+    },
+    "permission": {
+      "scope.camera": {
+        "desc": "用于拍摄包含英文文字的图片并识别可学习单词"
+      }
+    },
+    "usingComponents": true
+  },
+  "h5": {
+    "title": "知觅英语"
+  },
+  "vueVersion": "3"
+}

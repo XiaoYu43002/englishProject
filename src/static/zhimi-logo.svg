@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 415 415" fill="none">
+  <title>知觅英语品牌图标</title>
+  <desc>依据原始图标中抽象的“见”字造型重新描摹，无外围白边与投影。</desc>
+  <defs>
+    <linearGradient id="bg" x1="38" y1="18" x2="380" y2="405" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#2A6C4E"/>
+      <stop offset="0.52" stop-color="#15523F"/>
+      <stop offset="1" stop-color="#0E4436"/>
+    </linearGradient>
+    <linearGradient id="ivory" x1="116" y1="102" x2="282" y2="390" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFFDF5"/>
+      <stop offset="0.72" stop-color="#FAF8EE"/>
+      <stop offset="1" stop-color="#E6E5D9"/>
+    </linearGradient>
+    <linearGradient id="fold" x1="218" y1="270" x2="338" y2="334" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#DADCD3" stop-opacity="0"/>
+      <stop offset="0.48" stop-color="#DADCD3" stop-opacity="0.12"/>
+      <stop offset="1" stop-color="#DADCD3" stop-opacity="0.34"/>
+    </linearGradient>
+    <radialGradient id="node" cx="0" cy="0" r="1" gradientTransform="translate(267 104) rotate(48) scale(55)">
+      <stop stop-color="#F2CF79"/>
+      <stop offset="1" stop-color="#C7973D"/>
+    </radialGradient>
+    <clipPath id="round"><rect width="415" height="415" rx="94"/></clipPath>
+  </defs>
+  <g clip-path="url(#round)">
+    <rect width="415" height="415" rx="94" fill="url(#bg)"/>
+    <path d="M80 392C79 335 78 250 79 168C79 126 99 99 124 103C168 107 211 115 230 132C234 135 237 137 239 139C241 140 242 141 242 142C242 143 241 144 239 145C235 147 230 148 225 149C187 153 154 163 129 180C104 202 91 229 88 262C85 307 84 355 80 392Z" fill="url(#ivory)"/>
+    <path d="M250 415C302 394 356 300 430 255V430H250V415Z" fill="#4B7B62" opacity="0.26"/>
+    <path d="M-20 407C37 355 88 326 137 326C179 326 208 351 247 352C289 353 319 327 348 302C375 279 397 264 430 252V430H-20V407Z" fill="#28634E"/>
+    <path d="M286 126C290 135 283 143 270 149C250 157 229 166 202 178C181 188 166 203 165 220C164 234 174 246 187 251C197 255 207 252 216 254C246 256 278 260 306 270C329 279 345 295 342 316C338 334 294 344 195 362C278 338 306 292 220 278C174 284 142 267 124 249C109 234 110 216 120 201C132 183 154 173 180 169C208 162 234 156 252 148C270 141 282 133 286 126Z" fill="url(#ivory)" transform="translate(10 0)"/>
+    <path d="M231 274C262 278 294 283 315 292C334 300 342 310 338 318C323 335 272 345 210 361C235 339 250 320 252 308C255 294 245 280 231 274Z" fill="url(#fold)" transform="translate(10 0)"/>
+    <circle cx="294" cy="94" r="29" fill="url(#node)"/>
+  </g>
+</svg>

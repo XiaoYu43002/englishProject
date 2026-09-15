@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <title>知觅英语</title>
+    <style>
+      /* 手机正常滑动翻页，但不显示右侧滚动条 */
+      html, body {
+        margin: 0;
+        width: 100%;
+        height: 100%;
+        overflow-x: hidden;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+      }
+      html::-webkit-scrollbar,
+      body::-webkit-scrollbar {
+        width: 0;
+        height: 0;
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

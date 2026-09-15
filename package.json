@@ -1,0 +1,40 @@
+{
+  "name": "zhimi-english-uniapp",
+  "version": "1.2.0",
+  "private": true,
+  "description": "知觅英语 - uni-app / Vue 3 / TypeScript / Pinia 跨端客户端",
+  "scripts": {
+    "dev:h5": "uni",
+    "dev:server": "node server/index.mjs",
+    "dev:ocr": "python -m uvicorn ocr_service.app:app --host 0.0.0.0 --port 8790",
+    "test:ocr": "python -m unittest tests/test_ocr_extractor.py",
+    "download:wordbooks": "node scripts/download-open-wordbooks.mjs",
+    "import:wordbooks": "node scripts/import-open-wordbooks.mjs",
+    "sync:wordbooks": "npm run download:wordbooks && npm run import:wordbooks",
+    "dev:mp-weixin": "uni -p mp-weixin",
+    "dev:app": "uni -p app",
+    "build:h5": "uni build",
+    "build:mp-weixin": "uni build -p mp-weixin",
+    "build:app": "uni build -p app",
+    "type-check": "vue-tsc --noEmit"
+  },
+  "dependencies": {
+    "@dcloudio/uni-app": "3.0.0-alpha-1000920260909822",
+    "@dcloudio/uni-app-plus": "3.0.0-alpha-1000920260909822",
+    "@dcloudio/uni-components": "3.0.0-alpha-1000920260909822",
+    "@dcloudio/uni-h5": "3.0.0-alpha-1000920260909822",
+    "@dcloudio/uni-mp-weixin": "3.0.0-alpha-1000920260909822",
+    "pinia": "2.3.1",
+    "vue": "3.5.21"
+  },
+  "devDependencies": {
+    "@dcloudio/types": "3.4.31",
+    "@dcloudio/uni-cli-shared": "3.0.0-alpha-1000920260909822",
+    "@dcloudio/vite-plugin-uni": "3.0.0-alpha-1000920260909822",
+    "@types/node": "22.15.3",
+    "sass": "1.89.0",
+    "typescript": "5.8.3",
+    "vite": "8.2.2",
+    "vue-tsc": "2.2.12"
+  }
+}
