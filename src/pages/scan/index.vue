@@ -46,7 +46,7 @@ async function runOcr(filePath = lastFilePath.value) {
   store.setScanCandidates([])
   try {
     const result = await recognizeImage(filePath)
-    store.setScanCandidates(result.candidates)
+    store.setScanCandidates(result.candidates, { record: true })
     elapsedMs.value = result.elapsedMs
     lineCount.value = result.lineCount
     status.value = 'success'

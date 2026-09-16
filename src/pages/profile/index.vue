@@ -4,7 +4,7 @@ import BrandLogo from '@/components/BrandLogo.vue'
 import { useLearningStore } from '@/stores/learning'
 
 const store = useLearningStore()
-const menus = ['学习档案', '我的词书', '发音设置', '生词与拍词记录', '学习目标', '设置']
+const menus = ['学习档案', '我的词书', '发音设置', '拍词记录', '学习目标', '设置']
 
 function openMenu(name: string) {
   if (name === '我的词书') {
@@ -13,6 +13,10 @@ function openMenu(name: string) {
   }
   if (name === '发音设置') {
     uni.navigateTo({ url: '/pages/pronunciation-settings/index' })
+    return
+  }
+  if (name === '拍词记录') {
+    uni.navigateTo({ url: '/pages/scan-history/index' })
     return
   }
   uni.showToast({ title: `${name}待接入`, icon: 'none' })

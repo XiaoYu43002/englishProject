@@ -73,10 +73,32 @@ async function mark(state: RecallState) {
   uni.showToast({ title: tips[state], icon: 'none' })
   await loadDictionary()
 }
+
+async function markAsKo() {
+  if (store.isCurrentWordKo) {
+    uni.showToast({ title: '已标记为熟词', icon: 'none' })
+    return
+  }
+  const result = store.markCurrentWordAsKo()
+  if (!result.ok) return
+  revealed.value = false
+  uni.showToast({ title: '已标记为熟，后续不再出现', icon: 'none' })
+  await loadDictionary()
+}
 </script>
 
 <template>
   <view class="word-page" :class="{ 'word-page--revealed': revealed }">
+    <view class="word-topbar">
+      <view
+        class="ko-btn pressable"
+        :class="{ 'ko-btn--on': store.isCurrentWordKo }"
+        @tap.stop="markAsKo"
+      >
+        <text class="ko-btn__label">{{ store.isCurrentWordKo ? '已熟' : '熟' }}</text>
+      </view>
+    </view>
+
     <view class="word-hero">
       <view class="word-hero__cluster">
         <text class="word-hero__word">{{ store.currentWord.word }}</text>
@@ -99,15 +121,17 @@ async function mark(state: RecallState) {
       <scroll-view v-if="revealed" scroll-y class="word-body__scroll">
         <view v-for="block in meaningBlocks" :key="block.pos" class="pos-block">
           <text class="pos-block__label">{{ block.pos }}</text>
-          <view
-            v-for="(sense, index) in block.senses"
-            :key="`${block.pos}-${index}`"
-            class="pos-sense"
-          >
-            <view class="pos-sense__badge">
-              <text class="pos-sense__num">{{ index + 1 }}</text>
+          <view class="pos-block__senses">
+            <view
+              v-for="(sense, index) in block.senses"
+              :key="`${block.pos}-${index}`"
+              class="pos-sense"
+            >
+              <view class="pos-sense__badge">
+                <text class="pos-sense__num">{{ index + 1 }}</text>
+              </view>
+              <text class="pos-sense__text">{{ sense.text }}</text>
             </view>
-            <text class="pos-sense__text">{{ sense.text }}</text>
           </view>
         </view>
         <text v-if="!meaningBlocks.length" class="word-body__empty">暂无释义</text>
@@ -150,6 +174,7 @@ $mask: #d5e8df;
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
+  position: relative;
   /* 只留底部导航高度，遮罩一直铺到导航上方 */
   padding-bottom: calc(56px + env(safe-area-inset-bottom));
 }
@@ -159,12 +184,48 @@ $mask: #d5e8df;
   padding-bottom: calc(112px + env(safe-area-inset-bottom));
 }
 
+.word-topbar {
+  position: absolute;
+  z-index: 5;
+  top: calc(env(safe-area-inset-top) + 12px);
+  right: 16px;
+}
+
+.ko-btn {
+  min-width: 40px;
+  height: 32px;
+  padding: 0 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: #e4efe8;
+  border: 1px solid #b7cfc2;
+}
+
+.ko-btn--on {
+  background: #1f4d3a;
+  border-color: #1f4d3a;
+}
+
+.ko-btn__label {
+  color: #1f4d3a;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+.ko-btn--on .ko-btn__label {
+  color: #fffdf8;
+}
+
 .word-hero {
   padding: calc(env(safe-area-inset-top) + 48px) 28px 28px;
   display: flex;
   flex-direction: column;
   align-items: center;
   background: $paper;
+  position: relative;
 }
 
 .word-hero__cluster {
@@ -275,9 +336,9 @@ $mask: #d5e8df;
   margin-bottom: 16px;
   display: flex;
   flex-direction: row;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 10px 14px;
+  flex-wrap: nowrap;
+  align-items: flex-start;
+  gap: 10px;
 }
 
 .pos-block:last-child {
@@ -286,14 +347,30 @@ $mask: #d5e8df;
 
 .pos-block__label {
   flex: none;
-  padding: 3px 10px;
+  height: 26px;
+  padding: 0 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
   color: #fffdf8;
   background: $green;
   border-radius: 8px;
   font-size: 13px;
-  line-height: 20px;
+  line-height: 1;
   font-weight: 700;
   letter-spacing: 1px;
+  white-space: nowrap;
+}
+
+.pos-block__senses {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 14px;
 }
 
 .pos-sense {
@@ -301,6 +378,7 @@ $mask: #d5e8df;
   flex-direction: row;
   align-items: center;
   gap: 6px;
+  min-height: 26px;
   max-width: 100%;
 }
 

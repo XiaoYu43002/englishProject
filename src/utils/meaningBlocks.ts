@@ -23,6 +23,37 @@ const POS_RULES: Array<{ match: RegExp; label: string }> = [
   { match: /^(art\.|冠词)\s*/i, label: '冠词' },
 ]
 
+/** 二字标签在前，三字标签靠后，避免短长短错落 */
+const POS_DISPLAY_RANK: Record<string, number> = {
+  名词: 10,
+  动词: 20,
+  副词: 30,
+  介词: 40,
+  连词: 50,
+  代词: 60,
+  数词: 70,
+  冠词: 80,
+  '名词 / 动词': 90,
+  释义: 100,
+  形容词: 200,
+  感叹词: 210,
+  助动词: 220,
+}
+
+function posDisplayRank(pos: string) {
+  if (POS_DISPLAY_RANK[pos] != null) return POS_DISPLAY_RANK[pos]
+  const hanCount = [...pos].filter((char) => /[\u4e00-\u9fff]/.test(char)).length
+  return hanCount >= 3 ? 250 : 150
+}
+
+function sortPosLabels(labels: string[]) {
+  return [...labels].sort((a, b) => {
+    const rank = posDisplayRank(a) - posDisplayRank(b)
+    if (rank !== 0) return rank
+    return a.localeCompare(b, 'zh-CN')
+  })
+}
+
 function normalizeSpace(value: string) {
   return String(value || '').replace(/\s+/g, ' ').trim()
 }
@@ -136,7 +167,7 @@ export function buildMeaningBlocks(meanings: string[] = []): MeaningPosBlock[] {
     const plain = (map.get('释义') || []).filter((item) => !taggedTexts.has(item.toLowerCase()))
     if (!plain.length) {
       map.delete('释义')
-      return tagged.map((pos) => ({
+      return sortPosLabels(tagged).map((pos) => ({
         pos,
         senses: (map.get(pos) || []).map((text) => ({ text })),
       }))
@@ -144,10 +175,8 @@ export function buildMeaningBlocks(meanings: string[] = []): MeaningPosBlock[] {
     map.set('释义', plain)
   }
 
-  return order
-    .filter((pos) => (map.get(pos) || []).length)
-    .map((pos) => ({
-      pos,
-      senses: (map.get(pos) || []).map((text) => ({ text })),
-    }))
+  return sortPosLabels(order.filter((pos) => (map.get(pos) || []).length)).map((pos) => ({
+    pos,
+    senses: (map.get(pos) || []).map((text) => ({ text })),
+  }))
 }

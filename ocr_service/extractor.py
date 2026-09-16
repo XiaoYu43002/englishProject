@@ -1,13 +1,28 @@
 from __future__ import annotations
 
+import json
 import re
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Iterable, Sequence
 
 WORD_PATTERN = re.compile(r"[A-Za-z]+(?:['’-][A-Za-z]+)*")
 IGNORED_TOKENS = {
     "http", "https", "www", "com", "jpg", "jpeg", "png", "pdf",
 }
+
+_STOPWORDS_PATH = Path(__file__).resolve().parents[1] / "data" / "ocr-stopwords.json"
+
+
+def _load_stopwords() -> set[str]:
+    try:
+        raw = json.loads(_STOPWORDS_PATH.read_text(encoding="utf-8"))
+        return {str(item).strip().lower() for item in raw if str(item).strip()}
+    except Exception:
+        return set()
+
+
+OCR_STOPWORDS = _load_stopwords()
 
 
 @dataclass(frozen=True)
@@ -22,7 +37,7 @@ def normalize_word(value: str) -> str:
 
 
 def is_candidate(value: str) -> bool:
-    if not value or value in IGNORED_TOKENS:
+    if not value or value in IGNORED_TOKENS or value in OCR_STOPWORDS:
         return False
     if len(value) > 36:
         return False

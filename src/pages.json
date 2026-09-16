@@ -11,7 +11,8 @@
     { "path": "pages/word/index", "style": { "navigationStyle": "custom" } },
     { "path": "pages/sentence/index", "style": { "navigationStyle": "custom" } },
     { "path": "pages/profile/index", "style": { "navigationStyle": "custom" } },
-    { "path": "pages/pronunciation-settings/index", "style": { "navigationStyle": "custom" } }
+    { "path": "pages/pronunciation-settings/index", "style": { "navigationStyle": "custom" } },
+    { "path": "pages/scan-history/index", "style": { "navigationStyle": "custom" } }
   ],
   "globalStyle": {
     "navigationBarTextStyle": "black",

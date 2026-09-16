@@ -22,6 +22,11 @@ if (fs.existsSync(envPath)) {
 const vocabulary = JSON.parse(fs.readFileSync(path.join(root, 'data', 'vocabulary.json'), 'utf8'))
 const books = JSON.parse(fs.readFileSync(path.join(root, 'data', 'wordbooks.json'), 'utf8'))
 const taxonomy = JSON.parse(fs.readFileSync(path.join(root, 'taxonomy', 'taxonomy.json'), 'utf8'))
+const ocrStopwords = new Set(
+  JSON.parse(fs.readFileSync(path.join(root, 'data', 'ocr-stopwords.json'), 'utf8')).map((item) =>
+    String(item || '').trim().toLowerCase(),
+  ).filter(Boolean),
+)
 const wordMap = new Map(vocabulary.map((item) => [item.word, item]))
 const bookMap = new Map(books.map((item) => [item.id, item]))
 const port = Number(process.env.PORT || 8787)
@@ -386,7 +391,12 @@ const server = createServer(async (request, response) => {
       })
       const data = await upstream.json()
       if (!upstream.ok) return send(response, upstream.status, { message: data.detail || 'OCR 识别失败' })
-      return send(response, 200, { ...data, candidates: (data.candidates || []).map(enrichOcrCandidate) })
+      return send(response, 200, {
+        ...data,
+        candidates: (data.candidates || [])
+          .filter((item) => !ocrStopwords.has(String(item.normalized || item.word || '').toLowerCase()))
+          .map(enrichOcrCandidate),
+      })
     } catch (error) {
       const status = error.statusCode || 503
       return send(response, status, { message: status === 413 ? '图片超过大小限制' : 'OCR 服务不可用，请确认 RapidOCR 已启动' })

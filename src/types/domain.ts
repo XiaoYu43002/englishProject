@@ -106,3 +106,15 @@ export interface OcrResult {
 }
 
 export type ScanAddTarget = 'today' | 'notebook'
+
+/** 一次拍词识别记录 */
+export interface ScanHistoryRecord {
+  id: string
+  createdAt: number
+  candidateCount: number
+  words: string[]
+  meanings: Record<string, string>
+  addedWords: string[]
+  target?: ScanAddTarget | null
+}
+

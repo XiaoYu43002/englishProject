@@ -1,7 +1,8 @@
 import { defineStore } from 'pinia'
 import { fetchBookWords, getLocalWords, localBooks } from '@/services/catalog'
-import type { AuthUser, BookProgress, LearningWord, LoginMethod, OcrCandidate, ScanAddTarget, SemanticDomain, VocabularyWord, WordBook } from '@/types/domain'
+import type { AuthUser, BookProgress, LearningWord, LoginMethod, OcrCandidate, ScanAddTarget, ScanHistoryRecord, SemanticDomain, VocabularyWord, WordBook } from '@/types/domain'
 import { meaningsForBook } from '@/utils/meanings'
+import { isOcrStopword, normalizeWordKey } from '@/utils/ocrFilters'
 
 interface LearningState {
   loginMethod: LoginMethod | null
@@ -14,7 +15,12 @@ interface LearningState {
   streakDays: number
   selectedWords: string[]
   scanCandidates: OcrCandidate[]
+  /** 当前这次拍词会话 id，加入生词时回写 */
+  currentScanRecordId: string
+  scanHistory: ScanHistoryRecord[]
   personalWords: VocabularyWord[]
+  /** 用户标记为「熟」的词：学习计划与拍词结果中排除 */
+  koWords: string[]
   domains: SemanticDomain[]
   books: WordBook[]
   selectedBookId: string
@@ -60,6 +66,12 @@ const firstWord = storedBookWords[0] || getLocalWords('cet4')[0]
 const storedAuthToken = String(uni.getStorageSync('zhimi-auth-token') || '')
 const storedAuthUser = (uni.getStorageSync('zhimi-auth-user') || null) as AuthUser | null
 const storedLoginMethod = (uni.getStorageSync('zhimi-login-method') || null) as LoginMethod | null
+const storedKoWords = ((uni.getStorageSync('zhimi-ko-words') || []) as string[])
+  .map((item) => normalizeWordKey(item))
+  .filter(Boolean)
+const storedScanHistory = ((uni.getStorageSync('zhimi-scan-history') || []) as ScanHistoryRecord[])
+  .filter((item) => item && item.id && Array.isArray(item.words))
+  .slice(0, 100)
 
 function toLearningWord(word: VocabularyWord, bookId?: string): LearningWord {
   const activeBookId = bookId || word.activeBookId || word.bookIds?.[0] || ''
@@ -93,7 +105,10 @@ export const useLearningStore = defineStore('learning', {
     streakDays: 18,
     selectedWords: [],
     scanCandidates: [],
+    currentScanRecordId: '',
+    scanHistory: storedScanHistory,
     personalWords: storedPersonalWords,
+    koWords: storedKoWords,
     domains,
     books: allBooks,
     selectedBookId: allBooks.some((book) => book.id === storedBookId) ? storedBookId : 'cet4',
@@ -108,10 +123,72 @@ export const useLearningStore = defineStore('learning', {
     exploredCount: (state) => state.domains.filter((item) => item.explored).length,
     progress: (state) => Math.round(((state.todayTarget - state.remaining) / state.todayTarget) * 100),
     activeBook: (state) => state.books.find((book) => book.id === state.selectedBookId) || state.books[0],
-    activeWords: (state) => state.bookWords[state.selectedBookId] || [],
+    activeWords: (state) => {
+      const ko = new Set(state.koWords)
+      return (state.bookWords[state.selectedBookId] || []).filter((item) => !ko.has(normalizeWordKey(item.word || item.id)))
+    },
     activeBookProgress: (state) => state.bookProgress[state.selectedBookId] || { learned: 0, mastered: 0, currentIndex: 0 },
+    isCurrentWordKo: (state) => {
+      const key = normalizeWordKey(state.currentWord.word || state.currentWord.id || '')
+      return Boolean(key) && state.koWords.includes(key)
+    },
   },
   actions: {
+    persistKoWords() {
+      uni.setStorageSync('zhimi-ko-words', this.koWords)
+    },
+    isKoWord(word: string) {
+      return this.koWords.includes(normalizeWordKey(word))
+    },
+    filterScanCandidates(candidates: OcrCandidate[]) {
+      return candidates.filter((item) => {
+        const key = normalizeWordKey(item.normalized || item.word)
+        if (!key) return false
+        if (isOcrStopword(key)) return false
+        if (this.koWords.includes(key)) return false
+        return true
+      })
+    },
+    learnableWords(bookId = this.selectedBookId) {
+      const ko = new Set(this.koWords)
+      return (this.bookWords[bookId] || []).filter((item) => !ko.has(normalizeWordKey(item.word || item.id)))
+    },
+    findNextLearnableIndex(fromIndex: number, bookId = this.selectedBookId) {
+      const words = this.bookWords[bookId] || []
+      if (!words.length) return -1
+      const ko = new Set(this.koWords)
+      for (let step = 1; step <= words.length; step += 1) {
+        const index = (fromIndex + step) % words.length
+        const key = normalizeWordKey(words[index].word || words[index].id)
+        if (!ko.has(key)) return index
+      }
+      return -1
+    },
+    markCurrentWordAsKo() {
+      const key = normalizeWordKey(this.currentWord.word || this.currentWord.id || '')
+      if (!key) return { ok: false as const, reason: 'empty' as const }
+      if (!this.koWords.includes(key)) {
+        this.koWords = [...this.koWords, key]
+        this.persistKoWords()
+        this.masteredCount += 1
+      }
+      const progress = this.bookProgress[this.selectedBookId] || { learned: 0, mastered: 0, currentIndex: 0 }
+      progress.mastered += 1
+      const nextIndex = this.findNextLearnableIndex(progress.currentIndex)
+      if (nextIndex >= 0) {
+        progress.currentIndex = nextIndex
+        this.setCurrentWord((this.bookWords[this.selectedBookId] || [])[nextIndex])
+      }
+      this.bookProgress[this.selectedBookId] = progress
+      this.persistProgress()
+      if (this.scanCandidates.length) {
+        this.scanCandidates = this.filterScanCandidates(this.scanCandidates)
+        this.selectedWords = this.selectedWords.filter((word) =>
+          this.scanCandidates.some((item) => item.normalized === word),
+        )
+      }
+      return { ok: true as const, word: key }
+    },
     login(method: LoginMethod, payload?: { token?: string; user?: AuthUser | null }) {
       this.loginMethod = method
       uni.setStorageSync('zhimi-login-method', method)
@@ -137,9 +214,42 @@ export const useLearningStore = defineStore('learning', {
         ? this.selectedWords.filter((item) => item !== word)
         : [...this.selectedWords, word]
     },
-    setScanCandidates(candidates: OcrCandidate[]) {
-      this.scanCandidates = candidates
-      this.selectedWords = candidates.map((item) => item.normalized)
+    setScanCandidates(candidates: OcrCandidate[], options?: { record?: boolean }) {
+      const filtered = this.filterScanCandidates(candidates)
+      this.scanCandidates = filtered
+      this.selectedWords = filtered.map((item) => item.normalized)
+      if (!filtered.length) {
+        this.currentScanRecordId = ''
+        return
+      }
+      if (!options?.record) return
+      const record: ScanHistoryRecord = {
+        id: `scan-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        createdAt: Date.now(),
+        candidateCount: filtered.length,
+        words: filtered.map((item) => item.normalized),
+        meanings: Object.fromEntries(
+          filtered.map((item) => [item.normalized, item.meanings?.[0] || '']),
+        ),
+        addedWords: [],
+        target: null,
+      }
+      this.currentScanRecordId = record.id
+      this.scanHistory = [record, ...this.scanHistory].slice(0, 100)
+      this.persistScanHistory()
+    },
+    persistScanHistory() {
+      uni.setStorageSync('zhimi-scan-history', this.scanHistory)
+    },
+    clearScanHistory() {
+      this.scanHistory = []
+      this.currentScanRecordId = ''
+      uni.removeStorageSync('zhimi-scan-history')
+    },
+    removeScanHistory(id: string) {
+      this.scanHistory = this.scanHistory.filter((item) => item.id !== id)
+      if (this.currentScanRecordId === id) this.currentScanRecordId = ''
+      this.persistScanHistory()
     },
     selectAllScanWords() {
       this.selectedWords = this.scanCandidates.map((item) => item.normalized)
@@ -152,6 +262,7 @@ export const useLearningStore = defineStore('learning', {
       const existing = new Set(this.personalWords.map((item) => item.id))
       const additions: VocabularyWord[] = selected
         .filter((item) => !existing.has(item.normalized))
+        .filter((item) => !this.isKoWord(item.normalized))
         .map((item) => ({
           id: item.normalized,
           word: item.normalized,
@@ -170,11 +281,25 @@ export const useLearningStore = defineStore('learning', {
       const custom = this.books.find((book) => book.id === 'custom')
       if (custom) custom.wordCount = this.personalWords.length
       uni.setStorageSync('zhimi-personal-words', this.personalWords)
+
+      if (this.currentScanRecordId) {
+        this.scanHistory = this.scanHistory.map((item) => {
+          if (item.id !== this.currentScanRecordId) return item
+          const merged = Array.from(new Set([...item.addedWords, ...selected.map((row) => row.normalized)]))
+          return { ...item, addedWords: merged, target }
+        })
+        this.persistScanHistory()
+      }
+
       if (target === 'today' && selected.length) {
         this.selectedBookId = 'custom'
         uni.setStorageSync('zhimi-selected-book', 'custom')
-        const firstSelectedIndex = this.personalWords.findIndex((item) => item.id === selected[0].normalized)
-        this.openWord(Math.max(0, firstSelectedIndex))
+        const learnable = this.learnableWords('custom')
+        const first = learnable.find((item) => selected.some((row) => row.normalized === item.id)) || learnable[0]
+        if (first) {
+          const index = this.personalWords.findIndex((item) => item.id === first.id)
+          this.openWord(Math.max(0, index))
+        }
         this.remaining += additions.length
       }
       return { selected: selected.length, added: additions.length }
@@ -185,7 +310,19 @@ export const useLearningStore = defineStore('learning', {
       if (!this.bookWords[bookId]?.length) await this.loadBook(bookId)
       const progress = this.bookProgress[bookId] || { learned: 0, mastered: 0, currentIndex: 0 }
       const words = this.bookWords[bookId] || []
-      if (words.length) this.setCurrentWord(words[progress.currentIndex % words.length])
+      if (!words.length) return
+      const currentKey = normalizeWordKey(words[progress.currentIndex % words.length]?.word || '')
+      if (this.koWords.includes(currentKey)) {
+        const nextIndex = this.findNextLearnableIndex(progress.currentIndex - 1, bookId)
+        if (nextIndex >= 0) {
+          progress.currentIndex = nextIndex
+          this.bookProgress[bookId] = progress
+          this.setCurrentWord(words[nextIndex])
+          this.persistProgress()
+          return
+        }
+      }
+      this.setCurrentWord(words[progress.currentIndex % words.length])
     },
     async loadBook(bookId: string) {
       if (bookId === 'custom') {
@@ -229,7 +366,8 @@ export const useLearningStore = defineStore('learning', {
         this.reviewCount += 1
       }
       if (words.length) {
-        progress.currentIndex = (progress.currentIndex + 1) % words.length
+        const nextIndex = this.findNextLearnableIndex(progress.currentIndex)
+        progress.currentIndex = nextIndex >= 0 ? nextIndex : (progress.currentIndex + 1) % words.length
         this.setCurrentWord(words[progress.currentIndex])
       }
       this.bookProgress[this.selectedBookId] = progress
