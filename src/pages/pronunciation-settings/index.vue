@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
+import BottomNav from '@/components/BottomNav.vue'
 import { playWordAudio } from '@/services/dictionary'
 import {
   usePronunciationStore,
@@ -9,6 +10,12 @@ import {
 
 const store = usePronunciationStore()
 const currentVoices = computed(() => VOICE_OPTIONS[store.accent])
+const previewWord = ref('')
+
+const previewLabel = computed(() => {
+  const word = previewWord.value.trim()
+  return word ? `试听 ${word}` : '试听'
+})
 
 function selectAccent(accent: AudioAccent) {
   store.setAccent(accent)
@@ -19,8 +26,17 @@ function selectVoice(voiceId: string) {
 }
 
 async function preview() {
+  const word = previewWord.value.trim()
+  if (!word) {
+    uni.showToast({ title: '请先输入要试听的单词', icon: 'none' })
+    return
+  }
+  if (!/^[a-zA-Z][a-zA-Z'\- ]*$/.test(word)) {
+    uni.showToast({ title: '请输入英文单词', icon: 'none' })
+    return
+  }
   uni.showToast({ title: '试听中…', icon: 'none', duration: 800 })
-  const result = await playWordAudio('hello')
+  const result = await playWordAudio(word)
   uni.showToast({
     title: result.ok ? `${store.accentLabel} · ${store.activeVoiceOption.name}` : '试听失败',
     icon: 'none',
@@ -38,6 +54,18 @@ function back() {
       <view class="settings-header__back pressable" @tap="back">‹</view>
       <text class="settings-header__title">发音设置</text>
       <view class="settings-header__space" />
+    </view>
+
+    <view class="preview-input card">
+      <input
+        v-model="previewWord"
+        class="preview-input__field"
+        type="text"
+        confirm-type="done"
+        placeholder="输入单词后可试听，如 hello"
+        placeholder-class="preview-input__placeholder"
+        @confirm="preview"
+      />
     </view>
 
     <text class="section-label">默认口音</text>
@@ -77,23 +105,90 @@ function back() {
       </view>
     </view>
 
-    <view class="hint card">
-      <text class="hint__title">关于缓存</text>
-      <text class="hint__text">每个「口音 + 音色 + 单词」只合成一次，之后直接播本地缓存，不会每次重跑 TTS。</text>
-    </view>
+    <button class="preview-button pressable" @tap="preview">{{ previewLabel }}</button>
 
-    <button class="preview-button pressable" @tap="preview">试听 hello</button>
+    <BottomNav active="profile" />
   </view>
 </template>
 
 <style scoped lang="scss">
-.settings-screen { padding-top: calc(env(safe-area-inset-top) + 18px); }
-.settings-header { height: 44px; display: flex; align-items: center; justify-content: space-between; }
-.settings-header__back,.settings-header__space { width: 34px; }
-.settings-header__back { color: #1f4d3a; font-size: 34px; line-height: 34px; }
-.settings-header__title { font-size: 16px; font-weight: 700; color: #1f2421; }
-.section-label { display: block; margin-top: 28px; color: #3d7564; font-size: 11px; font-weight: 700; letter-spacing: 1px; }
-.option-row { margin-top: 12px; display: flex; gap: 10px; }
+.settings-screen {
+  padding-top: calc(env(safe-area-inset-top) + 18px);
+  padding-bottom: 116px;
+}
+
+.settings-header {
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.settings-header__back,
+.settings-header__space {
+  width: 36px;
+  height: 36px;
+  flex: none;
+}
+
+.settings-header__back {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #1f4d3a;
+  font-size: 28px;
+  line-height: 1;
+  padding-bottom: 2px;
+  box-sizing: border-box;
+}
+
+.settings-header__title {
+  flex: 1;
+  text-align: center;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 36px;
+  color: #1f2421;
+}
+
+.preview-input {
+  margin-top: 16px;
+  height: 48px;
+  padding: 0 16px;
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
+}
+
+.preview-input__field {
+  flex: 1;
+  height: 48px;
+  padding: 0;
+  color: #1f2421;
+  font-size: 14px;
+  line-height: 48px;
+  background: transparent;
+}
+
+.preview-input__placeholder {
+  color: #9ca39b;
+}
+
+.section-label {
+  display: block;
+  margin-top: 26px;
+  color: #3d7564;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+
+.option-row {
+  margin-top: 12px;
+  display: flex;
+  gap: 10px;
+}
+
 .option-card {
   flex: 1;
   padding: 14px 12px;
@@ -101,10 +196,33 @@ function back() {
   border-radius: 14px;
   border: 1px solid transparent;
 }
-.option-card--active { background: #dce8e1; border-color: #3d7564; }
-.option-card__title { display: block; color: #1f4d3a; font-size: 15px; font-weight: 700; }
-.option-card__desc { display: block; margin-top: 4px; color: #6e786f; font-size: 10px; }
-.voice-list { margin-top: 12px; display: flex; flex-direction: column; gap: 8px; }
+
+.option-card--active {
+  background: #dce8e1;
+  border-color: #3d7564;
+}
+
+.option-card__title {
+  display: block;
+  color: #1f4d3a;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.option-card__desc {
+  display: block;
+  margin-top: 4px;
+  color: #6e786f;
+  font-size: 10px;
+}
+
+.voice-list {
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
 .voice-row {
   padding: 14px 16px;
   display: flex;
@@ -112,22 +230,53 @@ function back() {
   justify-content: space-between;
   border: 1px solid transparent;
 }
-.voice-row--active { border-color: #3d7564; background: #f3f6ef; }
-.voice-row__main { display: flex; flex-direction: column; }
-.voice-row__name { color: #1f2421; font-size: 14px; font-weight: 700; }
-.voice-row__desc { margin-top: 4px; color: #6e786f; font-size: 11px; }
-.voice-row__check { color: #2f6652; font-size: 16px; font-weight: 700; }
-.hint { margin-top: 22px; padding: 14px 16px; }
-.hint__title { display: block; color: #3d7564; font-size: 11px; font-weight: 700; }
-.hint__text { display: block; margin-top: 6px; color: #6e786f; font-size: 11px; line-height: 18px; }
+
+.voice-row--active {
+  border-color: #3d7564;
+  background: #f3f6ef;
+}
+
+.voice-row__main {
+  display: flex;
+  flex-direction: column;
+}
+
+.voice-row__name {
+  color: #1f2421;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.voice-row__desc {
+  margin-top: 4px;
+  color: #6e786f;
+  font-size: 11px;
+}
+
+.voice-row__check {
+  color: #2f6652;
+  font-size: 16px;
+  font-weight: 700;
+}
+
 .preview-button {
-  margin-top: 24px;
+  margin: 28px 0 0;
+  padding: 0;
   height: 46px;
+  line-height: 46px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   border: none;
   border-radius: 14px;
   color: #fff;
   background: #2f6652;
   font-size: 14px;
   font-weight: 700;
+  text-align: center;
+}
+
+.preview-button::after {
+  border: none;
 }
 </style>

@@ -55,7 +55,11 @@ function sortPosLabels(labels: string[]) {
 }
 
 function normalizeSpace(value: string) {
-  return String(value || '').replace(/\s+/g, ' ').trim()
+  return String(value || '')
+    .replace(/〔/g, '（')
+    .replace(/〕/g, '）')
+    .replace(/\s+/g, ' ')
+    .trim()
 }
 
 function detectPos(chunk: string): { pos: string; rest: string } | null {

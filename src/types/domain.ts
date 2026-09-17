@@ -42,6 +42,8 @@ export interface VocabularyWord {
   meaningsByBook?: Record<string, string[]>
   usphone: string
   ukphone: string
+  /** ECDICT 综合音标（无英美区分时使用） */
+  phonetic?: string
   bookIds: string[]
   semanticDomainId: string
   semanticPath: string

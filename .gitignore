@@ -23,5 +23,6 @@ data/lexicon/zhimi-lexicon.sqlite-*
 data/lexicon/words.jsonl
 data/lexicon/word_book_entries.jsonl
 data/legacy-backup/
+data/vocabulary.json
 materials/**/*.jsonl
 materials/**/books/

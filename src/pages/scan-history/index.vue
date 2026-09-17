@@ -75,11 +75,9 @@ function goScan() {
         <view class="record-card__head pressable" @tap="toggleExpand(record.id)">
           <view class="record-card__meta-row">
             <text class="record-card__meta">
-              识别 {{ record.candidateCount }}
-              · 已加入 {{ record.addedWords.length }}
-              · {{ formatTime(record.createdAt) }}
+              识别 {{ record.candidateCount }} · 已加入 {{ record.addedWords.length }}
             </text>
-            <text class="record-card__arrow">{{ expandedId === record.id ? '▾' : '›' }}</text>
+            <text class="record-card__time">{{ formatTime(record.createdAt) }}</text>
           </view>
           <text class="record-card__preview">{{ previewWords(record) }}</text>
         </view>
@@ -195,16 +193,23 @@ function goScan() {
 .record-card__meta-row {
   display: flex;
   align-items: center;
-  justify-content: flex-end;
-  gap: 6px;
+  justify-content: space-between;
+  gap: 10px;
 }
 
 .record-card__meta {
-  flex: 1;
-  min-width: 0;
+  flex: none;
   color: #3d7564;
   font-size: 12px;
   font-weight: 600;
+  white-space: nowrap;
+}
+
+.record-card__time {
+  flex: 1;
+  min-width: 0;
+  color: #8b938b;
+  font-size: 12px;
   text-align: right;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -218,13 +223,6 @@ function goScan() {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.record-card__arrow {
-  flex: none;
-  color: #8b938b;
-  font-size: 16px;
-  line-height: 18px;
 }
 
 .record-card__body {

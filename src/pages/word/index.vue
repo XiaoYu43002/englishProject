@@ -20,7 +20,11 @@ const revealed = ref(false)
 const displayPhonetic = computed(() => {
   if (pronunciation.accent === 'uk' && store.currentWord.ukphone) return `/${store.currentWord.ukphone}/`
   if (pronunciation.accent === 'us' && store.currentWord.usphone) return `/${store.currentWord.usphone}/`
-  return dictionary.value?.phonetic || store.currentWord.phonetic || ''
+  if (store.currentWord.ukphone) return `/${store.currentWord.ukphone}/`
+  if (store.currentWord.usphone) return `/${store.currentWord.usphone}/`
+  const general = store.currentWord.phonetic || dictionary.value?.phonetic || ''
+  if (!general) return ''
+  return general.startsWith('/') ? general : `/${general}/`
 })
 
 const rawMeanings = computed(() => {
@@ -176,12 +180,12 @@ $mask: #d5e8df;
   box-sizing: border-box;
   position: relative;
   /* 只留底部导航高度，遮罩一直铺到导航上方 */
-  padding-bottom: calc(56px + env(safe-area-inset-bottom));
+  padding-bottom: calc(52px + env(safe-area-inset-bottom));
 }
 
 .word-page--revealed {
-  /* 显示答案后：三态按钮 + 底部导航 */
-  padding-bottom: calc(112px + env(safe-area-inset-bottom));
+  /* 显示答案后：三态按钮 + 底部导航（52 + 56） */
+  padding-bottom: calc(108px + env(safe-area-inset-bottom));
 }
 
 .word-topbar {
@@ -246,7 +250,8 @@ $mask: #d5e8df;
 
 .word-hero__sound {
   position: absolute;
-  left: calc(100% + 7px);
+  /* 与单词水平间隙约为原 7px 的 2/3 */
+  left: calc(100% + 5px);
   top: 50%;
   /* 略往下，与单词视觉中线对齐 */
   transform: translateY(calc(-50% + 5px));
@@ -309,7 +314,8 @@ $mask: #d5e8df;
 }
 
 .word-hero__phonetic {
-  margin-top: 12px;
+  /* 单词与音标间距减半 */
+  margin-top: 6px;
   color: #8a9188;
   font-size: 16px;
   line-height: 22px;
@@ -376,7 +382,7 @@ $mask: #d5e8df;
 .pos-sense {
   display: flex;
   flex-direction: row;
-  align-items: center;
+  align-items: flex-start;
   gap: 6px;
   min-height: 26px;
   max-width: 100%;
@@ -386,6 +392,8 @@ $mask: #d5e8df;
   flex: none;
   width: 22px;
   height: 22px;
+  /* 与释义首行（line-height:26）视觉居中对齐 */
+  margin-top: 2px;
   border-radius: 50%;
   background: #e4efe8;
   border: 1px solid #b7cfc2;
@@ -448,7 +456,8 @@ $mask: #d5e8df;
   z-index: 15;
   left: 0;
   right: 0;
-  bottom: calc(56px + env(safe-area-inset-bottom));
+  /* 紧贴底部导航（52px），消除中间空隙 */
+  bottom: calc(52px + env(safe-area-inset-bottom));
   display: flex;
   gap: 0;
   padding: 0;

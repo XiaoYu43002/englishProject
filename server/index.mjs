@@ -3,6 +3,7 @@ import { createServer } from 'node:http'
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { gunzipSync } from 'node:zlib'
 import { createAuthStore } from './auth-store.mjs'
 import { sendAliyunSms, smsConfigured } from './sms.mjs'
 import { createTtsCache, publicAudioUrl, normalizeAccent, normalizeVoice } from './tts.mjs'
@@ -19,7 +20,20 @@ if (fs.existsSync(envPath)) {
     if (key && process.env[key] === undefined) process.env[key] = value
   }
 }
-const vocabulary = JSON.parse(fs.readFileSync(path.join(root, 'data', 'vocabulary.json'), 'utf8'))
+
+function readJsonMaybeGzip(basePathWithoutExt) {
+  const plain = `${basePathWithoutExt}.json`
+  const gzipped = `${basePathWithoutExt}.json.gz`
+  if (fs.existsSync(plain)) {
+    return JSON.parse(fs.readFileSync(plain, 'utf8'))
+  }
+  if (fs.existsSync(gzipped)) {
+    return JSON.parse(gunzipSync(fs.readFileSync(gzipped)).toString('utf8'))
+  }
+  throw new Error(`missing ${plain} or ${gzipped}`)
+}
+
+const vocabulary = readJsonMaybeGzip(path.join(root, 'data', 'vocabulary'))
 const books = JSON.parse(fs.readFileSync(path.join(root, 'data', 'wordbooks.json'), 'utf8'))
 const taxonomy = JSON.parse(fs.readFileSync(path.join(root, 'taxonomy', 'taxonomy.json'), 'utf8'))
 const ocrStopwords = new Set(

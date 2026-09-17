@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import gzip
 import json
 import re
 import sqlite3
@@ -13,6 +14,7 @@ ROOT = Path(__file__).resolve().parents[1]
 LEXICON_DIR = ROOT / "data" / "lexicon"
 DB_PATH = LEXICON_DIR / "zhimi-lexicon.sqlite"
 OLD_VOCAB_PATH = ROOT / "data" / "vocabulary.json"
+OLD_VOCAB_GZ_PATH = ROOT / "data" / "vocabulary.json.gz"
 OLD_BOOKS_PATH = ROOT / "data" / "wordbooks.json"
 TAXONOMY_PATH = ROOT / "taxonomy" / "taxonomy.json"
 
@@ -74,6 +76,7 @@ def unique_meanings(items: list[str]) -> list[str]:
     out: list[str] = []
     for item in items:
         text = re.sub(r"\s+", " ", str(item or "").strip())
+        text = text.replace("〔", "（").replace("〕", "）")
         if not text:
             continue
         key = text.lower()
@@ -264,12 +267,12 @@ def export_for_app(conn: sqlite3.Connection, taxonomy: list[dict[str, Any]]) -> 
     vocabulary: list[dict[str, Any]] = []
     for row in conn.execute(
         """
-        SELECT id, word, word_norm, usphone, ukphone, meanings_json, review_required
+        SELECT id, word, word_norm, usphone, ukphone, phone, meanings_json, review_required
         FROM words
         ORDER BY word_norm, id
         """
     ):
-        wid, word, norm, usphone, ukphone, meanings_json, review_required = row
+        wid, word, norm, usphone, ukphone, phone, meanings_json, review_required = row
         meanings = json.loads(meanings_json or "[]")
         by_book = membership.get(wid) or {}
         book_ids = sorted(by_book.keys())
@@ -286,6 +289,7 @@ def export_for_app(conn: sqlite3.Connection, taxonomy: list[dict[str, Any]]) -> 
                 "meaningsByBook": by_book,
                 "usphone": usphone or "",
                 "ukphone": ukphone or "",
+                "phonetic": phone or "",
                 "bookIds": book_ids,
                 "semanticDomainId": semantic["semanticDomainId"],
                 "semanticPath": semantic["semanticPath"],
@@ -362,6 +366,9 @@ def export_for_app(conn: sqlite3.Connection, taxonomy: list[dict[str, Any]]) -> 
         json.dumps(vocabulary, ensure_ascii=False, indent=2) + "\n",
         encoding="utf-8",
     )
+    # GitHub 单文件限制 100MB：同步写压缩版供仓库提交 / 服务端回退读取
+    with gzip.open(OLD_VOCAB_GZ_PATH, "wt", encoding="utf-8") as gz:
+        json.dump(vocabulary, gz, ensure_ascii=False, separators=(",", ":"))
     (ROOT / "data" / "wordbooks.json").write_text(
         json.dumps(books_out, ensure_ascii=False, indent=2) + "\n",
         encoding="utf-8",
@@ -423,6 +430,7 @@ def export_for_app(conn: sqlite3.Connection, taxonomy: list[dict[str, Any]]) -> 
             "wordBookEntries": conn.execute("SELECT COUNT(*) FROM word_book_entries").fetchone()[0],
             "appExport": {
                 "vocabulary": "data/vocabulary.json",
+                "vocabularyGz": "data/vocabulary.json.gz",
                 "wordbooks": "data/wordbooks.json",
                 "catalog": "src/data/catalog.generated.ts",
             },
@@ -440,10 +448,14 @@ def export_for_app(conn: sqlite3.Connection, taxonomy: list[dict[str, Any]]) -> 
 def main() -> None:
     if not DB_PATH.exists():
         raise SystemExit(f"missing lexicon db: {DB_PATH} (run npm run build:lexicon first)")
-    if not OLD_VOCAB_PATH.exists():
-        raise SystemExit(f"missing old vocabulary: {OLD_VOCAB_PATH}")
+    if not OLD_VOCAB_PATH.exists() and not OLD_VOCAB_GZ_PATH.exists():
+        raise SystemExit(f"missing old vocabulary: {OLD_VOCAB_PATH} or {OLD_VOCAB_GZ_PATH}")
 
-    old_vocab = json.loads(OLD_VOCAB_PATH.read_text(encoding="utf-8"))
+    if OLD_VOCAB_PATH.exists():
+        old_vocab = json.loads(OLD_VOCAB_PATH.read_text(encoding="utf-8"))
+    else:
+        with gzip.open(OLD_VOCAB_GZ_PATH, "rt", encoding="utf-8") as gz:
+            old_vocab = json.load(gz)
     taxonomy = load_taxonomy()
 
     conn = sqlite3.connect(str(DB_PATH))

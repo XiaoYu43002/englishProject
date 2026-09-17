@@ -79,7 +79,13 @@ function toLearningWord(word: VocabularyWord, bookId?: string): LearningWord {
   return {
     id: word.id,
     word: word.word,
-    phonetic: word.usphone ? `/${word.usphone}/` : word.ukphone ? `/${word.ukphone}/` : '',
+    phonetic: word.usphone
+      ? `/${word.usphone}/`
+      : word.ukphone
+        ? `/${word.ukphone}/`
+        : word.phonetic
+          ? `/${String(word.phonetic).replace(/^\/|\/$/g, '')}/`
+          : '',
     meaning: meanings.join('；'),
     meanings,
     meaningsByBook: word.meaningsByBook,

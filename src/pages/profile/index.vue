@@ -1,10 +1,23 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import BottomNav from '@/components/BottomNav.vue'
 import BrandLogo from '@/components/BrandLogo.vue'
 import { useLearningStore } from '@/stores/learning'
 
 const store = useLearningStore()
 const menus = ['学习档案', '我的词书', '发音设置', '拍词记录', '学习目标', '设置']
+
+const displayName = computed(() => {
+  const user = store.authUser
+  return user?.nickname || user?.phone || (store.isLoggedIn ? '已登录用户' : '英语学习者')
+})
+
+const loginHint = computed(() => {
+  if (!store.isLoggedIn) return '未登录'
+  if (store.loginMethod === 'wechat') return '微信登录'
+  if (store.loginMethod === 'phone') return '手机号登录'
+  return '已登录'
+})
 
 function openMenu(name: string) {
   if (name === '我的词书') {
@@ -21,6 +34,22 @@ function openMenu(name: string) {
   }
   uni.showToast({ title: `${name}待接入`, icon: 'none' })
 }
+
+function handleLogout() {
+  if (!store.isLoggedIn) {
+    uni.redirectTo({ url: '/pages/login/index' })
+    return
+  }
+  uni.showModal({
+    title: '退出登录',
+    content: '确定退出当前账号吗？本地学习进度仍会保留在本机。',
+    success: (res) => {
+      if (!res.confirm) return
+      store.logout()
+      uni.redirectTo({ url: '/pages/login/index' })
+    },
+  })
+}
 </script>
 
 <template>
@@ -31,8 +60,8 @@ function openMenu(name: string) {
     <view class="profile-head">
       <BrandLogo :size="58" />
       <view class="profile-head__text">
-        <text class="profile-head__name">英语学习者</text>
-        <text class="profile-head__goal">当前目标：考研英语 · 四六级词汇</text>
+        <text class="profile-head__name">{{ displayName }}</text>
+        <text class="profile-head__goal">{{ loginHint }} · 当前目标：考研英语 · 四六级词汇</text>
       </view>
     </view>
 
@@ -56,6 +85,10 @@ function openMenu(name: string) {
     <view class="menu-list">
       <view v-for="menu in menus" :key="menu" class="menu-row card pressable" @tap="openMenu(menu)">
         <text>{{ menu }}</text>
+        <text class="menu-row__arrow">›</text>
+      </view>
+      <view class="menu-row card pressable menu-row--logout" @tap="handleLogout">
+        <text>{{ store.isLoggedIn ? '退出登录' : '去登录' }}</text>
         <text class="menu-row__arrow">›</text>
       </view>
     </view>
@@ -151,5 +184,9 @@ function openMenu(name: string) {
 .menu-row__arrow {
   color: #8b938b;
   font-size: 22px;
+}
+
+.menu-row--logout {
+  color: #9a6b5c;
 }
 </style>

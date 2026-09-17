@@ -1,30 +1,163 @@
 [
   {
-    "id": "cs",
-    "name": "Computer Science",
-    "nameZh": "计算机",
-    "description": "计算机 / 软件 / 人工智能相关术语释义",
-    "sortOrder": 1
+    "id": "agriculture_forestry_fisheries",
+    "name": "Agriculture / Forestry / Fisheries",
+    "nameZh": "农林水产",
+    "description": "农业、林业与水产相关术语",
+    "sortOrder": 10
   },
   {
-    "id": "finance",
-    "name": "Finance",
-    "nameZh": "金融",
-    "description": "金融、会计、投资相关术语释义",
-    "sortOrder": 2
+    "id": "arts_media",
+    "name": "Arts & Media",
+    "nameZh": "艺术传媒",
+    "description": "艺术、媒体与传播相关术语",
+    "sortOrder": 20
+  },
+  {
+    "id": "aviation_maritime_transport",
+    "name": "Aviation / Maritime / Transport",
+    "nameZh": "航空航海交通",
+    "description": "航空、航海与交通运输术语",
+    "sortOrder": 30
   },
   {
     "id": "biology",
     "name": "Biology",
     "nameZh": "生物",
-    "description": "生物、生命科学相关术语释义",
-    "sortOrder": 3
+    "description": "生物与生命科学相关术语",
+    "sortOrder": 40
+  },
+  {
+    "id": "business_management",
+    "name": "Business & Management",
+    "nameZh": "工商管理",
+    "description": "商业与管理相关术语",
+    "sortOrder": 50
+  },
+  {
+    "id": "chemistry",
+    "name": "Chemistry",
+    "nameZh": "化学",
+    "description": "化学与化工相关术语",
+    "sortOrder": 60
+  },
+  {
+    "id": "cs",
+    "name": "Computer & IT",
+    "nameZh": "计算机",
+    "description": "计算机与信息技术术语",
+    "sortOrder": 69
+  },
+  {
+    "id": "computer_it",
+    "name": "Computer & IT",
+    "nameZh": "计算机",
+    "description": "计算机与信息技术术语",
+    "sortOrder": 70
+  },
+  {
+    "id": "earth_environment",
+    "name": "Earth & Environment",
+    "nameZh": "地球环境",
+    "description": "地球科学与环境术语",
+    "sortOrder": 80
+  },
+  {
+    "id": "electronics_telecommunications",
+    "name": "Electronics & Telecom",
+    "nameZh": "电子通信",
+    "description": "电子与电信相关术语",
+    "sortOrder": 90
+  },
+  {
+    "id": "engineering_manufacturing",
+    "name": "Engineering & Manufacturing",
+    "nameZh": "工程制造",
+    "description": "工程与制造相关术语",
+    "sortOrder": 100
+  },
+  {
+    "id": "finance",
+    "name": "Finance & Economics",
+    "nameZh": "金融经济",
+    "description": "金融与经济相关术语",
+    "sortOrder": 109
+  },
+  {
+    "id": "finance_economics",
+    "name": "Finance & Economics",
+    "nameZh": "金融经济",
+    "description": "金融与经济相关术语",
+    "sortOrder": 110
+  },
+  {
+    "id": "history_archaeology",
+    "name": "History & Archaeology",
+    "nameZh": "历史考古",
+    "description": "历史与考古相关术语",
+    "sortOrder": 120
+  },
+  {
+    "id": "language_literature",
+    "name": "Language & Literature",
+    "nameZh": "语言文学",
+    "description": "语言与文学相关术语",
+    "sortOrder": 130
+  },
+  {
+    "id": "law",
+    "name": "Law",
+    "nameZh": "法律",
+    "description": "法律相关术语",
+    "sortOrder": 140
+  },
+  {
+    "id": "mathematics_statistics",
+    "name": "Mathematics & Statistics",
+    "nameZh": "数理统计",
+    "description": "数学与统计相关术语",
+    "sortOrder": 150
   },
   {
     "id": "medicine",
-    "name": "Medicine",
-    "nameZh": "医学",
-    "description": "医学、临床相关术语释义",
-    "sortOrder": 4
+    "name": "Medicine & Health",
+    "nameZh": "医学健康",
+    "description": "医学与健康相关术语",
+    "sortOrder": 159
+  },
+  {
+    "id": "medicine_health",
+    "name": "Medicine & Health",
+    "nameZh": "医学健康",
+    "description": "医学与健康相关术语",
+    "sortOrder": 160
+  },
+  {
+    "id": "military_defense",
+    "name": "Military & Defense",
+    "nameZh": "军事国防",
+    "description": "军事与国防相关术语",
+    "sortOrder": 170
+  },
+  {
+    "id": "physics",
+    "name": "Physics",
+    "nameZh": "物理",
+    "description": "物理学相关术语",
+    "sortOrder": 180
+  },
+  {
+    "id": "religion_mythology",
+    "name": "Religion & Mythology",
+    "nameZh": "宗教神话",
+    "description": "宗教与神话相关术语",
+    "sortOrder": 190
+  },
+  {
+    "id": "sports",
+    "name": "Sports",
+    "nameZh": "体育",
+    "description": "体育相关术语",
+    "sortOrder": 200
   }
 ]

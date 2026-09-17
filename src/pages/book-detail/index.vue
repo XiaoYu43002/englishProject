@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
+import BottomNav from '@/components/BottomNav.vue'
 import { useLearningStore } from '@/stores/learning'
 
 const store = useLearningStore()
@@ -70,11 +71,17 @@ function openWord(wordId: string) {
         </view>
       </view>
     </view>
+
+    <BottomNav active="semantic" />
   </view>
 </template>
 
 <style scoped lang="scss">
-.book-detail-screen { padding-top: calc(env(safe-area-inset-top) + 18px); overflow: visible; }
+.book-detail-screen {
+  padding-top: calc(env(safe-area-inset-top) + 18px);
+  padding-bottom: 116px;
+  overflow: visible;
+}
 .topbar { height: 42px; display: flex; align-items: center; justify-content: space-between; }
 .topbar__back, .topbar__space { width: 34px; }
 .topbar__back { color: #1f4d3a; font-size: 34px; line-height: 34px; }

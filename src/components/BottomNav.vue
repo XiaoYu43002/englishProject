@@ -6,13 +6,24 @@ const props = defineProps<{ active: NavKey }>()
 const items: Array<{
   key: NavKey
   label: string
-  glyph?: string
-  icon?: string
-  iconStyle?: { width: string; height: string }
+  icon: string
+  iconStyle: { width: string; height: string }
   url: string
 }> = [
-  { key: 'home', label: '首页', glyph: '⌂', url: '/pages/home/index' },
-  { key: 'semantic', label: '学习', glyph: '◫', url: '/pages/semantic/index' },
+  {
+    key: 'home',
+    label: '首页',
+    icon: '/static/icons/nav-home.svg',
+    iconStyle: { width: '18px', height: '18px' },
+    url: '/pages/home/index',
+  },
+  {
+    key: 'semantic',
+    label: '学习',
+    icon: '/static/icons/nav-books.svg',
+    iconStyle: { width: '14px', height: '14px' },
+    url: '/pages/semantic/index',
+  },
   {
     key: 'scan',
     label: '拍词',
@@ -24,7 +35,7 @@ const items: Array<{
     key: 'sentence',
     label: '句子',
     icon: '/static/icons/nav-sentence.svg',
-    iconStyle: { width: '15px', height: '11px' },
+    iconStyle: { width: '14px', height: '14px' },
     url: '/pages/sentence/index',
   },
   {
@@ -52,17 +63,13 @@ function navigate(key: NavKey, url: string) {
       @tap="navigate(item.key, item.url)"
     >
       <view class="bottom-nav__icon-slot">
-        <view
-          v-if="item.icon"
-          class="bottom-nav__glyph"
-          :style="{
-            width: item.iconStyle?.width,
-            height: item.iconStyle?.height,
-            '-webkit-mask-image': `url(${item.icon})`,
-            'mask-image': `url(${item.icon})`,
-          }"
+        <image
+          class="bottom-nav__image"
+          :class="{ 'bottom-nav__image--active': item.key === active }"
+          :src="item.icon"
+          :style="item.iconStyle"
+          mode="aspectFit"
         />
-        <text v-else class="bottom-nav__icon">{{ item.glyph }}</text>
       </view>
       <text class="bottom-nav__label">{{ item.label }}</text>
     </view>
@@ -109,27 +116,13 @@ function navigate(key: NavKey, url: string) {
   justify-content: center;
 }
 
-.bottom-nav__icon {
-  width: 18px;
-  height: 18px;
-  font-size: 18px;
-  line-height: 18px;
-  text-align: center;
-}
-
-.bottom-nav__glyph {
+.bottom-nav__image {
   flex: none;
-  background-color: #6b6e66;
-  -webkit-mask-repeat: no-repeat;
-  mask-repeat: no-repeat;
-  -webkit-mask-position: center;
-  mask-position: center;
-  -webkit-mask-size: contain;
-  mask-size: contain;
+  opacity: 0.72;
 }
 
-.bottom-nav__item--active .bottom-nav__glyph {
-  background-color: #1f4d3a;
+.bottom-nav__image--active {
+  opacity: 1;
 }
 
 .bottom-nav__label {

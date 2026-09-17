@@ -40,7 +40,19 @@ npm run integrate:lexicon
 
 # 或一步完成
 npm run sync:lexicon
+
+# 3) 并入 ECDICT（考试 tag 词 + 增强已有释义/综合音标）
+npm run import:ecdict
+
+# 4) 并入专业领域词（materials/professional → 领域层 + 专业词书）
+npm run import:professional
 ```
+
+ECDICT 路径：`materials/ECDICT_complete_app_dictionary/`（约 235 万词）。  
+**不会**整包写入 App：默认只导入 `by_tag` 考试词，并用全量 JSONL 增强库内已有词。
+
+专业领域路径：`materials/professional/*.jsonl`（约 33.5 万词，20 个领域）。  
+会写入 `domains` / `word_domain_meanings`，并生成 `pro_*` 词书供 App 学习。
 
 导出后 Node API（`server/index.mjs`）会直接读取更新后的 `data/vocabulary.json` / `data/wordbooks.json`。
 旧文件首次整合时备份到 `data/legacy-backup/`。
@@ -48,7 +60,9 @@ npm run sync:lexicon
 整合结果（参考）：
 
 - 主表 ≈ materials 23881 + 旧库独有 707 ≈ **24588**
-- 词书 = materials 23 本 + 保留旧书 初中/中考/高考/考研2024 共 **27** 本
+- 并入 ECDICT 考试标签后约 **25444**
+- 再并入专业领域后约 **348002**（随材料变动）
+- 词书 ≈ 考试/教材 27 本 + 专业领域 20 本 ≈ **47** 本
 
 ## 分层约定
 
