@@ -1,0 +1,18 @@
+{
+  "sourceFile": "materials/english_vocabulary_full_merged/full_merged.jsonl",
+  "sourceSha256": "da90e6b5d340d15d0c2dc55b80cee4639447bde2b3f77fc25b7ccbce1cf7a2c2",
+  "words": 24588,
+  "wordBookEntries": 97316,
+  "reviewRequired": 1666,
+  "missingBookRefs": 0,
+  "books": 27,
+  "domains": 4,
+  "db": "data/lexicon/zhimi-lexicon.sqlite",
+  "dbSha256": "944e28f547bebd056c661ed5254f4cc6449dc05db2c73cf060872d0ac49df25c",
+  "dbBytes": 99966976,
+  "appExport": {
+    "vocabulary": "data/vocabulary.json",
+    "wordbooks": "data/wordbooks.json",
+    "catalog": "src/data/catalog.generated.ts"
+  }
+}

@@ -18,3 +18,7 @@ data/dictionaryapi/audio/
 data/dictionaryapi/index.jsonl
 data/dictionaryapi/progress.json
 data/dictionaryapi/summary.json
+data/lexicon/zhimi-lexicon.sqlite
+data/lexicon/zhimi-lexicon.sqlite-*
+data/lexicon/words.jsonl
+data/lexicon/word_book_entries.jsonl

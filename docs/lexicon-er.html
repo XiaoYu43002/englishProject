@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>知觅英语 · 词库表关系</title>
+  <style>
+    :root {
+      --paper: #f7f4ec;
+      --ink: #1f2421;
+      --muted: #5f6a62;
+      --line: #d7d2c4;
+      --green: #1f4d3a;
+      --green-soft: #3d7564;
+      --card: #fffdf8;
+      --master: #e7f0ea;
+      --book: #f3efe4;
+      --domain: #ebe8f2;
+      --meta: #ececec;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      padding: 40px 24px 72px;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 12% 8%, rgba(61, 117, 100, 0.12), transparent 28%),
+        radial-gradient(circle at 88% 0%, rgba(167, 140, 90, 0.12), transparent 24%),
+        var(--paper);
+      font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+      line-height: 1.55;
+    }
+
+    .wrap {
+      max-width: 1080px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      color: var(--green);
+      font-size: 28px;
+      letter-spacing: 0.02em;
+    }
+
+    .lead {
+      margin: 0 0 28px;
+      color: var(--muted);
+      font-size: 15px;
+    }
+
+    .lead code {
+      padding: 1px 6px;
+      background: #efe9db;
+      border-radius: 6px;
+      color: var(--green);
+      font-size: 13px;
+    }
+
+    .callout {
+      margin-bottom: 28px;
+      padding: 16px 18px;
+      background: var(--master);
+      border: 1px solid #c5d7cb;
+      border-radius: 16px;
+    }
+
+    .callout strong {
+      color: var(--green);
+    }
+
+    .layers {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+      margin-bottom: 36px;
+    }
+
+    .layer {
+      padding: 14px 16px;
+      border-radius: 14px;
+      border: 1px solid var(--line);
+      background: var(--card);
+    }
+
+    .layer h2 {
+      margin: 0 0 6px;
+      font-size: 14px;
+      color: var(--green);
+    }
+
+    .layer p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .layer--1 { background: var(--master); }
+    .layer--2 { background: var(--book); }
+    .layer--3 { background: var(--domain); }
+
+    h3 {
+      margin: 0 0 14px;
+      font-size: 18px;
+      color: var(--ink);
+    }
+
+    .diagram {
+      position: relative;
+      margin-bottom: 36px;
+      padding: 28px 20px 20px;
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      overflow-x: auto;
+    }
+
+    svg.erd {
+      display: block;
+      width: 100%;
+      min-width: 920px;
+      height: auto;
+    }
+
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px 22px;
+      margin-top: 14px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .legend span {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .swatch {
+      width: 14px;
+      height: 14px;
+      border-radius: 4px;
+      border: 1px solid rgba(0,0,0,0.08);
+    }
+
+    .tables {
+      display: grid;
+      gap: 16px;
+    }
+
+    .table-card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      overflow: hidden;
+    }
+
+    .table-card__head {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .table-card__head h4 {
+      margin: 0;
+      font-size: 16px;
+    }
+
+    .badge {
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    .badge--master { background: #d7e7de; color: var(--green); }
+    .badge--book { background: #ebe3d0; color: #6a5733; }
+    .badge--domain { background: #ddd8ec; color: #4d4570; }
+    .badge--meta { background: var(--meta); color: #555; }
+
+    .table-card__desc {
+      margin: 0;
+      padding: 10px 16px 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    table.cols {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    table.cols th,
+    table.cols td {
+      padding: 9px 16px;
+      border-top: 1px solid #eee8da;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    table.cols th {
+      width: 28%;
+      color: var(--green-soft);
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    table.cols td { color: var(--ink); }
+    table.cols .key { color: #9a6b1f; font-weight: 700; }
+    table.cols .fk { color: #3d5a80; font-weight: 700; }
+
+    .path {
+      margin-top: 28px;
+      padding: 16px 18px;
+      background: #fff;
+      border: 1px dashed #cfc8b6;
+      border-radius: 14px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .path code {
+      color: var(--green);
+      word-break: break-all;
+    }
+
+    @media (max-width: 800px) {
+      .layers { grid-template-columns: 1fr; }
+      body { padding: 24px 14px 48px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>词库表关系</h1>
+    <p class="lead">
+      三层结构：统一主词典 + 多本词书关系 + 专业领域释义。<br />
+      物理库文件：<code>data/lexicon/zhimi-lexicon.sqlite</code>
+    </p>
+
+    <div class="callout">
+      <strong>主表在哪里？</strong>
+      主表是 <code>words</code>，存放在
+      <code>/home/giga/englishProject/data/lexicon/zhimi-lexicon.sqlite</code>
+      里。一词一行，负责搜索、音标和跨词书常用义；
+      四级 / 六级 / 考研等书内释义不在主表，而在 <code>word_book_entries</code>。
+    </div>
+
+    <div class="layers">
+      <div class="layer layer--1">
+        <h2>Layer 1 · 主词典</h2>
+        <p><code>words</code> — 统一词条，可全局搜索</p>
+      </div>
+      <div class="layer layer--2">
+        <h2>Layer 2 · 词书关系</h2>
+        <p><code>books</code> + <code>word_book_entries</code> — 按词书取释义</p>
+      </div>
+      <div class="layer layer--3">
+        <h2>Layer 3 · 专业领域</h2>
+        <p><code>domains</code> + <code>word_domain_meanings</code> — 计金生医等</p>
+      </div>
+    </div>
+
+    <h3>关系总览</h3>
+    <div class="diagram">
+      <svg class="erd" viewBox="0 0 980 520" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="词库 ER 图">
+        <defs>
+          <marker id="arrow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+            <path d="M0,0 L6,3 L0,6 Z" fill="#6e786f" />
+          </marker>
+        </defs>
+
+        <!-- books -->
+        <rect x="40" y="40" width="220" height="120" rx="14" fill="#f3efe4" stroke="#cfc5ae" />
+        <text x="150" y="72" text-anchor="middle" font-size="16" font-weight="700" fill="#1f4d3a">books</text>
+        <text x="56" y="100" font-size="12" fill="#5f6a62">PK  id</text>
+        <text x="56" y="120" font-size="12" fill="#5f6a62">name / category / level</text>
+        <text x="56" y="140" font-size="12" fill="#5f6a62">unique_words …</text>
+
+        <!-- words (master) -->
+        <rect x="380" y="160" width="240" height="170" rx="14" fill="#e7f0ea" stroke="#b7cec0" stroke-width="2" />
+        <text x="500" y="192" text-anchor="middle" font-size="17" font-weight="800" fill="#1f4d3a">words · 主表</text>
+        <text x="396" y="222" font-size="12" fill="#5f6a62">PK  id / word / word_norm</text>
+        <text x="396" y="242" font-size="12" fill="#5f6a62">usphone / ukphone</text>
+        <text x="396" y="262" font-size="12" fill="#5f6a62">meanings_json（常用义）</text>
+        <text x="396" y="282" font-size="12" fill="#5f6a62">phrases / sentences / …</text>
+        <text x="396" y="302" font-size="12" fill="#5f6a62">review_required</text>
+
+        <!-- domains -->
+        <rect x="720" y="40" width="220" height="120" rx="14" fill="#ebe8f2" stroke="#c8c1d8" />
+        <text x="830" y="72" text-anchor="middle" font-size="16" font-weight="700" fill="#1f4d3a">domains</text>
+        <text x="736" y="100" font-size="12" fill="#5f6a62">PK  id</text>
+        <text x="736" y="120" font-size="12" fill="#5f6a62">name / name_zh</text>
+        <text x="736" y="140" font-size="12" fill="#5f6a62">cs · finance · biology · medicine</text>
+
+        <!-- word_book_entries -->
+        <rect x="80" y="360" width="280" height="130" rx="14" fill="#f3efe4" stroke="#cfc5ae" />
+        <text x="220" y="392" text-anchor="middle" font-size="15" font-weight="700" fill="#1f4d3a">word_book_entries</text>
+        <text x="96" y="420" font-size="12" fill="#5f6a62">PK  (word_id, book_id)</text>
+        <text x="96" y="440" font-size="12" fill="#3d5a80">FK  word_id → words.id</text>
+        <text x="96" y="460" font-size="12" fill="#3d5a80">FK  book_id → books.id</text>
+        <text x="96" y="480" font-size="12" fill="#5f6a62">meanings_json · word_rank</text>
+
+        <!-- word_domain_meanings -->
+        <rect x="620" y="360" width="300" height="130" rx="14" fill="#ebe8f2" stroke="#c8c1d8" />
+        <text x="770" y="392" text-anchor="middle" font-size="15" font-weight="700" fill="#1f4d3a">word_domain_meanings</text>
+        <text x="636" y="420" font-size="12" fill="#5f6a62">PK  (word_id, domain_id)</text>
+        <text x="636" y="440" font-size="12" fill="#3d5a80">FK  word_id → words.id</text>
+        <text x="636" y="460" font-size="12" fill="#3d5a80">FK  domain_id → domains.id</text>
+        <text x="636" y="480" font-size="12" fill="#5f6a62">meanings_json · notes · source</text>
+
+        <!-- meta -->
+        <rect x="420" y="40" width="160" height="70" rx="12" fill="#ececec" stroke="#cfcfcf" />
+        <text x="500" y="70" text-anchor="middle" font-size="14" font-weight="700" fill="#555">meta</text>
+        <text x="500" y="92" text-anchor="middle" font-size="11" fill="#777">key / value</text>
+
+        <!-- edges -->
+        <path d="M150 160 V320 H220" fill="none" stroke="#6e786f" stroke-width="1.6" marker-end="url(#arrow)" />
+        <path d="M430 330 L280 360" fill="none" stroke="#6e786f" stroke-width="1.6" marker-end="url(#arrow)" />
+        <path d="M830 160 V320 H770" fill="none" stroke="#6e786f" stroke-width="1.6" marker-end="url(#arrow)" />
+        <path d="M560 330 L700 360" fill="none" stroke="#6e786f" stroke-width="1.6" marker-end="url(#arrow)" />
+
+        <text x="188" y="250" font-size="11" fill="#6e786f">1</text>
+        <text x="248" y="348" font-size="11" fill="#6e786f">N</text>
+        <text x="412" y="348" font-size="11" fill="#6e786f">1</text>
+        <text x="300" y="355" font-size="11" fill="#6e786f">N</text>
+        <text x="842" y="250" font-size="11" fill="#6e786f">1</text>
+        <text x="790" y="348" font-size="11" fill="#6e786f">N</text>
+        <text x="575" y="348" font-size="11" fill="#6e786f">1</text>
+        <text x="680" y="355" font-size="11" fill="#6e786f">N</text>
+      </svg>
+
+      <div class="legend">
+        <span><i class="swatch" style="background:#e7f0ea"></i>主词典</span>
+        <span><i class="swatch" style="background:#f3efe4"></i>词书关系</span>
+        <span><i class="swatch" style="background:#ebe8f2"></i>专业领域</span>
+        <span><i class="swatch" style="background:#ececec"></i>构建元信息</span>
+        <span>箭头：外键方向（N → 1 指向被引用主键）</span>
+      </div>
+    </div>
+
+    <h3>各表字段</h3>
+    <div class="tables">
+      <section class="table-card">
+        <div class="table-card__head">
+          <h4>words</h4>
+          <span class="badge badge--master">主表 · Layer 1</span>
+        </div>
+        <p class="table-card__desc">统一主词典：一词一行。搜索、默认释义、音标都从这里取。</p>
+        <table class="cols">
+          <tr><th><span class="key">PK</span> id</th><td>规范词条 ID，通常与 word 相同</td></tr>
+          <tr><th>word</th><td>展示用原文</td></tr>
+          <tr><th>word_norm</th><td>小写规范化，用于搜索 / 去重</td></tr>
+          <tr><th>usphone / ukphone / phone</th><td>美音、英音、通用音标</td></tr>
+          <tr><th>phonetics_json</th><td>音标变体集合</td></tr>
+          <tr><th>pronunciation_refs_json</th><td>原仓库发音引用标识</td></tr>
+          <tr><th>meanings_json</th><td>跨词书常用义（主表只存这个，不存各书释义）</td></tr>
+          <tr><th>translations_json 等</th><td>词性结构、短语、例句、真题句、同反义、记忆法、考题</td></tr>
+          <tr><th>review_required</th><td>缺音标等需复核标记</td></tr>
+          <tr><th>book_count</th><td>出现在几本词书中</td></tr>
+        </table>
+      </section>
+
+      <section class="table-card">
+        <div class="table-card__head">
+          <h4>books</h4>
+          <span class="badge badge--book">词书 · Layer 2</span>
+        </div>
+        <p class="table-card__desc">23 本逻辑词书元数据（四级、六级、考研、雅思…）。</p>
+        <table class="cols">
+          <tr><th><span class="key">PK</span> id</th><td>如 cet4 / postgraduate / ielts</td></tr>
+          <tr><th>name / short_name</th><td>全称与短名</td></tr>
+          <tr><th>category / level</th><td>exam / school / business 与级别文案</td></tr>
+          <tr><th>unique_words</th><td>该书唯一词数</td></tr>
+        </table>
+      </section>
+
+      <section class="table-card">
+        <div class="table-card__head">
+          <h4>word_book_entries</h4>
+          <span class="badge badge--book">关系 · Layer 2</span>
+        </div>
+        <p class="table-card__desc">词 ↔ 词书多对多。按词书学习时优先读这里的释义。</p>
+        <table class="cols">
+          <tr><th><span class="key">PK</span> (word_id, book_id)</th><td>联合主键</td></tr>
+          <tr><th><span class="fk">FK</span> word_id</th><td>→ words.id</td></tr>
+          <tr><th><span class="fk">FK</span> book_id</th><td>→ books.id</td></tr>
+          <tr><th>meanings_json</th><td>该词书侧重点释义</td></tr>
+          <tr><th>word_rank</th><td>书内排序</td></tr>
+          <tr><th>source_*_json</th><td>原始册次与来源追溯</td></tr>
+        </table>
+      </section>
+
+      <section class="table-card">
+        <div class="table-card__head">
+          <h4>domains</h4>
+          <span class="badge badge--domain">领域 · Layer 3</span>
+        </div>
+        <p class="table-card__desc">专业领域字典：计算机、金融、生物、医学（可继续扩展）。</p>
+        <table class="cols">
+          <tr><th><span class="key">PK</span> id</th><td>cs / finance / biology / medicine</td></tr>
+          <tr><th>name / name_zh</th><td>英文名与中文名</td></tr>
+          <tr><th>description</th><td>领域说明</td></tr>
+        </table>
+      </section>
+
+      <section class="table-card">
+        <div class="table-card__head">
+          <h4>word_domain_meanings</h4>
+          <span class="badge badge--domain">关系 · Layer 3</span>
+        </div>
+        <p class="table-card__desc">词的专业释义层。不污染考试词书释义；目前表结构已就绪，数据待补。</p>
+        <table class="cols">
+          <tr><th><span class="key">PK</span> (word_id, domain_id)</th><td>联合主键</td></tr>
+          <tr><th><span class="fk">FK</span> word_id</th><td>→ words.id</td></tr>
+          <tr><th><span class="fk">FK</span> domain_id</th><td>→ domains.id</td></tr>
+          <tr><th>meanings_json</th><td>该领域释义列表</td></tr>
+          <tr><th>notes / source</th><td>备注与来源</td></tr>
+        </table>
+      </section>
+
+      <section class="table-card">
+        <div class="table-card__head">
+          <h4>meta</h4>
+          <span class="badge badge--meta">构建信息</span>
+        </div>
+        <p class="table-card__desc">导入校验用键值，如 source_sha256、word_count。</p>
+        <table class="cols">
+          <tr><th><span class="key">PK</span> key</th><td>元数据键</td></tr>
+          <tr><th>value</th><td>元数据值</td></tr>
+        </table>
+      </section>
+    </div>
+
+    <div class="path">
+      <div><strong>打开本页：</strong> <code>docs/lexicon-er.html</code></div>
+      <div style="margin-top:6px"><strong>主表路径：</strong> <code>data/lexicon/zhimi-lexicon.sqlite</code> → 表 <code>words</code></div>
+      <div style="margin-top:6px"><strong>重建命令：</strong> <code>npm run build:lexicon</code></div>
+    </div>
+  </div>
+</body>
+</html>

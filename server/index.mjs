@@ -27,7 +27,13 @@ const ocrStopwords = new Set(
     String(item || '').trim().toLowerCase(),
   ).filter(Boolean),
 )
-const wordMap = new Map(vocabulary.map((item) => [item.word, item]))
+const wordMap = new Map()
+for (const item of vocabulary) {
+  const id = String(item.id || '').trim().toLowerCase()
+  const word = String(item.word || '').trim().toLowerCase()
+  if (id) wordMap.set(id, item)
+  if (word) wordMap.set(word, item)
+}
 const bookMap = new Map(books.map((item) => [item.id, item]))
 const port = Number(process.env.PORT || 8787)
 

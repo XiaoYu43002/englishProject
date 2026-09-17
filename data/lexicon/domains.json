@@ -1,0 +1,30 @@
+[
+  {
+    "id": "cs",
+    "name": "Computer Science",
+    "nameZh": "计算机",
+    "description": "计算机 / 软件 / 人工智能相关术语释义",
+    "sortOrder": 1
+  },
+  {
+    "id": "finance",
+    "name": "Finance",
+    "nameZh": "金融",
+    "description": "金融、会计、投资相关术语释义",
+    "sortOrder": 2
+  },
+  {
+    "id": "biology",
+    "name": "Biology",
+    "nameZh": "生物",
+    "description": "生物、生命科学相关术语释义",
+    "sortOrder": 3
+  },
+  {
+    "id": "medicine",
+    "name": "Medicine",
+    "nameZh": "医学",
+    "description": "医学、临床相关术语释义",
+    "sortOrder": 4
+  }
+]
