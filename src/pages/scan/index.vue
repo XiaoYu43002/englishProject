@@ -63,6 +63,14 @@ function toggleAll() {
   else store.selectAllScanWords()
 }
 
+function reshoot() {
+  status.value = 'idle'
+  errorMessage.value = ''
+  photoPath.value = ''
+  store.setScanCandidates([])
+  choosePhoto(['camera'])
+}
+
 function addWords(target: ScanAddTarget) {
   if (!selectedCount.value) {
     uni.showToast({ title: '请先选择单词', icon: 'none' })
@@ -75,95 +83,103 @@ function addWords(target: ScanAddTarget) {
 </script>
 
 <template>
-  <view class="screen scan-screen">
-    <view class="scan-heading">
-      <text class="page-title scan-title">拍词</text>
-      <text class="page-subtitle">
-        试卷、四六级真题、阅读段落——一键上传并按需选择加入生词本进行学习
-      </text>
-    </view>
-
-    <view class="photo-card card pressable" @tap="tapCaptureArea">
-      <image v-if="photoPath" class="photo-card__image" :src="photoPath" mode="aspectFill" />
-      <view v-else class="photo-card__empty">
-        <view class="focus-frame"><view class="focus-frame__leaf" /></view>
-        <text class="photo-card__title">拍摄英文书页或题目</text>
-        <text class="photo-card__text">画面清晰、文字水平，识别会更准确</text>
-      </view>
-      <view v-if="busy" class="recognizing-mask">
-        <view class="scan-line" />
-        <text class="recognizing-mask__title">正在辨认单词</text>
-        <text class="recognizing-mask__text">首次启动模型可能需要多等一会儿</text>
-      </view>
-    </view>
-
-    <view class="source-actions">
-      <button
-        class="source-button source-button--primary pressable"
-        :disabled="busy"
-        @tap.stop="choosePhoto(['camera'])"
-      >
-        <view class="source-button__glyph source-button__glyph--scan" /><text>拍照识词</text>
-      </button>
-      <button
-        class="source-button pressable"
-        :disabled="busy"
-        @tap.stop="choosePhoto(['album'])"
-      >
-        <view class="source-button__glyph source-button__glyph--album" /><text>从相册选择</text>
-      </button>
-    </view>
-
-    <view v-if="status === 'error'" class="message-card message-card--error">
-      <text class="message-card__title">这次没有识别成功</text>
-      <text class="message-card__text">{{ errorMessage }}</text>
-      <view class="message-card__actions">
-        <text class="message-card__link" @tap="runOcr()">重新识别</text>
-        <text class="message-card__link" @tap="tapCaptureArea">再拍一张</text>
-      </view>
-    </view>
-
-    <view v-if="status === 'success' && !store.scanCandidates.length" class="message-card">
-      <text class="message-card__title">没有识别到英文单词</text>
-      <text class="message-card__text">请对准题目或段落文字，避免反光、倾斜或模糊后再试。</text>
-      <text class="message-card__link" @tap="tapCaptureArea">重新拍摄</text>
-    </view>
-
-    <view v-if="store.scanCandidates.length" class="result-card">
-      <view class="result-card__head">
-        <text class="result-card__title">
-          共识别 <text class="result-card__count">{{ store.scanCandidates.length }}</text> 词
+  <view class="screen scan-screen" :class="{ 'scan-screen--result': store.scanCandidates.length }">
+    <template v-if="!store.scanCandidates.length">
+      <view class="scan-heading">
+        <text class="page-title scan-title">拍词</text>
+        <text class="page-subtitle">
+          试卷、四六级真题、阅读段落——一键上传并按需选择加入生词本进行学习
         </text>
-        <text class="result-card__action" @tap="toggleAll">{{ allSelected ? '取消勾选' : '全选' }}</text>
       </view>
 
-      <scroll-view scroll-y class="candidate-list" :show-scrollbar="false">
-        <view class="candidate-list__inner">
+      <view class="photo-card card pressable" @tap="tapCaptureArea">
+        <image v-if="photoPath" class="photo-card__image" :src="photoPath" mode="aspectFill" />
+        <view v-else class="photo-card__empty">
+          <view class="focus-frame"><view class="focus-frame__leaf" /></view>
+          <text class="photo-card__title">拍摄英文书页或题目</text>
+          <text class="photo-card__text">画面清晰、文字水平，识别会更准确</text>
+        </view>
+        <view v-if="busy" class="recognizing-mask">
+          <view class="scan-line" />
+          <text class="recognizing-mask__title">正在辨认单词</text>
+          <text class="recognizing-mask__text">首次启动模型可能需要多等一会儿</text>
+        </view>
+      </view>
+
+      <view class="source-actions">
+        <button
+          class="source-button source-button--primary pressable"
+          :disabled="busy"
+          @tap.stop="choosePhoto(['camera'])"
+        >
+          <view class="source-button__glyph source-button__glyph--scan" /><text>拍照识词</text>
+        </button>
+        <button
+          class="source-button pressable"
+          :disabled="busy"
+          @tap.stop="choosePhoto(['album'])"
+        >
+          <view class="source-button__glyph source-button__glyph--album" /><text>从相册选择</text>
+        </button>
+      </view>
+
+      <view v-if="status === 'error'" class="message-card message-card--error">
+        <text class="message-card__title">这次没有识别成功</text>
+        <text class="message-card__text">{{ errorMessage }}</text>
+        <view class="message-card__actions">
+          <text class="message-card__link" @tap="runOcr()">重新识别</text>
+          <text class="message-card__link" @tap="tapCaptureArea">再拍一张</text>
+        </view>
+      </view>
+
+      <view v-if="status === 'success' && !store.scanCandidates.length" class="message-card">
+        <text class="message-card__title">没有识别到英文单词</text>
+        <text class="message-card__text">请对准题目或段落文字，避免反光、倾斜或模糊后再试。</text>
+        <text class="message-card__link" @tap="tapCaptureArea">重新拍摄</text>
+      </view>
+    </template>
+
+    <template v-else>
+      <view class="result-page">
+        <view class="result-toolbar">
+          <text class="result-toolbar__side" @tap="reshoot">再拍一次</text>
+          <view class="result-toolbar__center">
+            <text class="result-toolbar__label">共识别</text>
+            <text class="result-toolbar__count">{{ store.scanCandidates.length }}</text>
+            <text class="result-toolbar__label">词</text>
+          </view>
+          <text class="result-toolbar__side result-toolbar__side--right" @tap="toggleAll">
+            {{ allSelected ? '取消勾选' : '全选' }}
+          </text>
+        </view>
+
+        <scroll-view scroll-y class="result-list" :show-scrollbar="false">
           <view
             v-for="item in store.scanCandidates"
             :key="`${item.normalized}-${item.lineIndex}`"
-            class="candidate-row"
+            class="result-row"
+            :class="{ 'result-row--on': store.selectedWords.includes(item.normalized) }"
             @tap="store.toggleWord(item.normalized)"
           >
             <image
-              class="candidate-row__check"
+              class="result-row__check"
               :src="store.selectedWords.includes(item.normalized) ? '/static/icons/radio-on.svg' : '/static/icons/radio-off.svg'"
               mode="aspectFit"
             />
-            <text class="candidate-row__word">{{ item.word }}</text>
-            <view class="candidate-row__meaning-wrap">
-              <text class="candidate-row__meaning">{{ item.meanings[0] || '词义待补充' }}</text>
+            <view class="result-row__body">
+              <text class="result-row__word">{{ item.word }}</text>
+              <text class="result-row__meaning">{{ item.meanings[0] || '词义待补充' }}</text>
             </view>
-            <text class="candidate-row__confidence">{{ Math.round(item.confidence * 100) }}%</text>
+            <text class="result-row__confidence">{{ Math.round(item.confidence * 100) }}%</text>
           </view>
-        </view>
-      </scroll-view>
-    </view>
+        </scroll-view>
 
-    <view v-if="store.scanCandidates.length" class="confirm-actions">
-      <button class="confirm-button pressable" hover-class="confirm-button--on" @tap="addWords('notebook')">加入生词本</button>
-      <button class="confirm-button pressable" hover-class="confirm-button--on" @tap="addWords('today')">加入今日学习</button>
-    </view>
+        <view class="result-actions">
+          <button class="result-action result-action--ghost pressable" @tap="addWords('notebook')">加入生词本</button>
+          <button class="result-action result-action--solid pressable" @tap="addWords('today')">加入今日学习</button>
+        </view>
+      </view>
+    </template>
 
     <BottomNav active="scan" />
   </view>
@@ -173,6 +189,16 @@ function addWords(target: ScanAddTarget) {
 .scan-screen {
   padding-top: calc(env(safe-area-inset-top) + 34px);
   padding-bottom: 116px;
+}
+
+.scan-screen--result {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  padding-left: 0;
+  padding-right: 0;
+  padding-top: calc(env(safe-area-inset-top) + 36px);
+  padding-bottom: calc(52px + env(safe-area-inset-bottom));
 }
 
 .scan-heading {
@@ -323,8 +349,7 @@ function addWords(target: ScanAddTarget) {
   line-height: 44px;
 }
 
-.source-button::after,
-.confirm-button::after {
+.source-button::after {
   border: 0;
 }
 
@@ -402,133 +427,161 @@ function addWords(target: ScanAddTarget) {
   margin-top: 0;
 }
 
-.result-card {
-  margin-top: 18px;
-  padding: 14px 12px 12px;
-  background: #e7eee6;
-  border: 1px solid #cfd9cc;
-  border-radius: 22px;
+.result-page {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  width: 100%;
+  height: 100%;
 }
 
-.result-card__head {
-  position: relative;
+.result-toolbar {
   display: flex;
   align-items: center;
-  justify-content: center;
-  min-height: 32px;
-  margin-bottom: 10px;
-  padding: 0 68px;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 16px 12px;
+  border-bottom: 1px solid rgba(31, 77, 58, 0.08);
+  background: rgba(248, 245, 233, 0.96);
 }
 
-.result-card__title {
+.result-toolbar__side {
+  flex: 0 0 72px;
+  color: #3d7564;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.result-toolbar__side--right {
+  text-align: right;
+}
+
+.result-toolbar__center {
+  flex: 1;
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 4px;
+}
+
+.result-toolbar__label {
   color: #4a524c;
   font-size: 15px;
   font-weight: 600;
-  text-align: center;
 }
 
-.result-card__count {
+.result-toolbar__count {
   color: #1f4d3a;
-  font-size: 20px;
+  font-size: 26px;
   font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.5px;
 }
 
-.result-card__action {
-  position: absolute;
-  top: 50%;
-  right: 4px;
-  color: #1f4d3a;
-  font-size: 13px;
-  font-weight: 600;
-  transform: translateY(-50%);
-}
-
-.candidate-list {
-  height: 280px;
+.result-list {
+  flex: 1;
+  min-height: 0;
+  height: 0;
+  background: #f3f0e6;
   -webkit-overflow-scrolling: touch;
 }
 
-.candidate-list__inner {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  padding-bottom: 2px;
-}
-
-.candidate-row {
-  min-height: 48px;
-  padding: 10px 14px;
+.result-row {
   display: flex;
   align-items: center;
-  gap: 8px;
-  background: #fff;
-  border-radius: 18px;
+  gap: 12px;
+  min-height: 56px;
+  padding: 12px 16px;
+  background: #fffdf8;
+  border-bottom: 1px solid rgba(224, 220, 207, 0.85);
 }
 
-.candidate-row__check {
+.result-row--on {
+  background: #f4f8f4;
+}
+
+.result-row__check {
   flex: none;
-  width: 11px;
-  height: 11px;
+  width: 16px;
+  height: 16px;
 }
 
-.candidate-row__word {
-  flex: none;
-  padding-right: 1px;
-  color: #1f2421;
-  font-size: 14px;
-  font-weight: 700;
-  font-style: italic;
-  line-height: 14px;
-  white-space: nowrap;
-}
-
-.candidate-row__meaning-wrap {
+.result-row__body {
   min-width: 0;
   flex: 1;
-  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
 }
 
-.candidate-row__meaning {
-  display: block;
+.result-row__word {
+  color: #1f2421;
+  font-size: 16px;
+  font-weight: 700;
+  font-style: italic;
+  line-height: 1.2;
+}
+
+.result-row__meaning {
   overflow: hidden;
   color: #8b9288;
-  font-size: 13px;
-  line-height: 1.2;
+  font-size: 12px;
+  line-height: 1.35;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.candidate-row__confidence {
+.result-row__confidence {
   flex: none;
   color: #9a927f;
   font-size: 11px;
   font-weight: 600;
 }
 
-.confirm-actions {
+.result-actions {
+  flex: none;
   display: flex;
   gap: 10px;
-  margin-top: 14px;
+  padding: 8px 16px 10px;
+  background: #f8f5e9;
+  border-top: 1px solid rgba(31, 77, 58, 0.08);
 }
 
-.confirm-button {
+.result-action {
   flex: 1;
   height: 46px;
   margin: 0;
-  padding: 0 8px;
-  color: #1f4d3a;
-  background: #f4f1e8;
-  border: 1px solid #cdd5cc;
-  border-radius: 999px;
+  padding: 0 10px;
+  border-radius: 14px;
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 700;
   line-height: 46px;
 }
 
-.confirm-button--on,
-.confirm-button:active {
+.result-action::after {
+  border: 0;
+}
+
+.result-action--ghost {
+  color: #1f4d3a;
+  background: transparent;
+  border: 1.5px solid rgba(31, 77, 58, 0.28);
+}
+
+.result-action--solid {
   color: #fff;
   background: #1f4d3a;
-  border-color: #1f4d3a;
+  border: 1.5px solid #1f4d3a;
+  box-shadow: 0 8px 18px rgba(31, 77, 58, 0.18);
+}
+
+.result-action--ghost:active {
+  background: rgba(31, 77, 58, 0.06);
+}
+
+.result-action--solid:active {
+  opacity: 0.92;
 }
 </style>

@@ -1,0 +1,545 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>知觅英语短时学习调度器 V1｜开发实现指南</title>
+  <style>
+    :root {
+      --brand: #197f78;
+      --brand-dark: #105f5a;
+      --brand-soft: #eaf7f5;
+      --blue-soft: #eef6ff;
+      --warn: #b86a16;
+      --warn-soft: #fff7e8;
+      --danger: #b43e4d;
+      --danger-soft: #fff0f2;
+      --ink: #172325;
+      --muted: #607175;
+      --line: #dce7e6;
+      --paper: #ffffff;
+      --page: #f5f8f8;
+      --code: #102426;
+      --shadow: 0 12px 35px rgba(25, 71, 72, .08);
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background: var(--page);
+      font-family: Inter, "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+      line-height: 1.72;
+    }
+    a { color: var(--brand-dark); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .layout { display: grid; grid-template-columns: 270px minmax(0, 920px); gap: 28px; max-width: 1250px; margin: 0 auto; padding: 28px; }
+    aside { position: sticky; top: 20px; align-self: start; max-height: calc(100vh - 40px); overflow: auto; background: var(--paper); border: 1px solid var(--line); border-radius: 18px; padding: 20px; box-shadow: var(--shadow); }
+    aside .logo { display: flex; align-items: center; gap: 10px; color: var(--brand-dark); font-weight: 800; font-size: 17px; margin-bottom: 16px; }
+    .logo-mark { width: 34px; height: 34px; display: grid; place-items: center; border-radius: 11px; color: #fff; background: linear-gradient(135deg, var(--brand), #56b9ae); }
+    nav a { display: block; padding: 7px 10px; margin: 2px 0; border-radius: 9px; font-size: 14px; color: #4d6265; }
+    nav a:hover { color: var(--brand-dark); background: var(--brand-soft); text-decoration: none; }
+    main { min-width: 0; }
+    .hero { color: white; border-radius: 24px; padding: 42px; background: radial-gradient(circle at 85% 15%, rgba(255,255,255,.19), transparent 28%), linear-gradient(135deg, #105f5a, #21958b 72%, #4ab7ab); box-shadow: var(--shadow); }
+    .hero .eyebrow { display: inline-block; padding: 5px 11px; border: 1px solid rgba(255,255,255,.35); border-radius: 999px; font-size: 13px; letter-spacing: .04em; }
+    .hero h1 { margin: 16px 0 10px; font-size: clamp(30px, 5vw, 48px); line-height: 1.18; }
+    .hero p { max-width: 700px; margin: 0; color: rgba(255,255,255,.86); font-size: 17px; }
+    .meta { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 24px; }
+    .meta span { padding: 6px 11px; border-radius: 999px; background: rgba(255,255,255,.13); font-size: 13px; }
+    section { scroll-margin-top: 20px; margin-top: 24px; padding: 30px; border: 1px solid var(--line); border-radius: 20px; background: var(--paper); box-shadow: var(--shadow); }
+    h2 { margin: 0 0 18px; font-size: 27px; color: var(--brand-dark); }
+    h3 { margin: 26px 0 10px; font-size: 20px; }
+    h4 { margin: 20px 0 8px; font-size: 17px; }
+    p { margin: 9px 0; }
+    ul, ol { padding-left: 23px; }
+    li + li { margin-top: 5px; }
+    .lead { font-size: 17px; color: #405457; }
+    .callout { margin: 16px 0; padding: 15px 17px; border-left: 4px solid var(--brand); border-radius: 10px; background: var(--brand-soft); }
+    .callout.warn { border-color: var(--warn); background: var(--warn-soft); }
+    .callout.danger { border-color: var(--danger); background: var(--danger-soft); }
+    .grid-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+    .card { border: 1px solid var(--line); border-radius: 14px; padding: 17px; background: #fbfdfd; }
+    .card strong { color: var(--brand-dark); }
+    .flow { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; align-items: stretch; margin: 20px 0; }
+    .node { display: grid; place-items: center; min-height: 85px; text-align: center; padding: 12px; border: 1px solid #badbd7; border-radius: 14px; background: var(--brand-soft); font-weight: 700; }
+    .node small { display: block; margin-top: 3px; color: var(--muted); font-weight: 500; }
+    .arrow { display: grid; place-items: center; color: var(--brand); font-size: 25px; }
+    table { width: 100%; border-collapse: collapse; margin: 15px 0; font-size: 14px; }
+    th, td { padding: 11px 12px; border: 1px solid var(--line); text-align: left; vertical-align: top; }
+    th { color: var(--brand-dark); background: var(--brand-soft); }
+    tr:nth-child(even) td { background: #fbfdfd; }
+    code { padding: .12em .36em; color: #0a665f; background: #e9f5f3; border-radius: 5px; font-family: "SFMono-Regular", Consolas, monospace; font-size: .91em; }
+    pre { position: relative; margin: 15px 0; padding: 18px; overflow: auto; color: #dceeed; background: var(--code); border-radius: 14px; line-height: 1.58; font-size: 13px; }
+    pre code { padding: 0; color: inherit; background: transparent; }
+    .tag { display: inline-block; margin-right: 5px; padding: 3px 8px; border-radius: 999px; color: var(--brand-dark); background: var(--brand-soft); font-size: 12px; font-weight: 700; }
+    .checklist { list-style: none; padding-left: 0; }
+    .checklist li { position: relative; padding-left: 28px; }
+    .checklist li::before { content: "✓"; position: absolute; left: 0; top: 1px; width: 20px; height: 20px; display: grid; place-items: center; color: white; background: var(--brand); border-radius: 50%; font-size: 12px; }
+    .footer { padding: 28px 5px 50px; color: var(--muted); text-align: center; font-size: 13px; }
+    .print { width: 100%; margin-top: 16px; border: 0; border-radius: 10px; padding: 10px 12px; color: white; background: var(--brand); cursor: pointer; font-weight: 700; }
+    .print:hover { background: var(--brand-dark); }
+    @media (max-width: 900px) {
+      .layout { display: block; padding: 14px; }
+      aside { position: static; max-height: none; margin-bottom: 16px; }
+      nav { columns: 2; }
+      .hero { padding: 28px 23px; }
+      section { padding: 22px 18px; }
+      .grid-2, .flow { grid-template-columns: 1fr; }
+      .arrow { transform: rotate(90deg); }
+    }
+    @media print {
+      body { background: white; }
+      .layout { display: block; max-width: none; padding: 0; }
+      aside { display: none; }
+      section, .hero { box-shadow: none; break-inside: avoid; }
+      pre { white-space: pre-wrap; }
+    }
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <aside>
+      <div class="logo"><span class="logo-mark">知</span>知觅英语 · 开发文档</div>
+      <nav>
+        <a href="#overview">1. 方案概览</a>
+        <a href="#states">2. 状态定义</a>
+        <a href="#transitions">3. 状态转移</a>
+        <a href="#intervals">4. 间隔参数</a>
+        <a href="#batching">5. 10/50/100词处理</a>
+        <a href="#queue">6. 动态队列</a>
+        <a href="#hard">7. 困难词</a>
+        <a href="#model">8. 数据模型</a>
+        <a href="#algorithm">9. TypeScript算法</a>
+        <a href="#logging">10. 日志记录</a>
+        <a href="#tests">11. 测试用例</a>
+        <a href="#integration">12. 长期调度衔接</a>
+        <a href="#checklist">13. 开发清单</a>
+      </nav>
+      <button class="print" onclick="window.print()">打印 / 保存为 PDF</button>
+    </aside>
+
+    <main>
+      <header class="hero">
+        <span class="eyebrow">Short-Term Learning Scheduler V1</span>
+        <h1>知觅英语短时学习调度器 V1</h1>
+        <p>面向新词当天学习阶段的“认识、模糊、忘记”状态机与动态队列实现指南。适用于 uni-app、Vue 3、TypeScript 与 Pinia。</p>
+        <div class="meta">
+          <span>版本：V1.0</span><span>算法类型：规则状态机</span><span>范围：当天短时学习</span><span>后续衔接：SSP-MMC</span>
+        </div>
+      </header>
+
+      <section id="overview">
+        <h2>1. 方案概览</h2>
+        <p class="lead">第一版不需要机器学习，采用“有限状态机（FSM）＋动态优先队列＋时间/卡片双条件调度”。先保证逻辑稳定、可解释并记录数据，后续再用真实用户数据优化参数。</p>
+        <div class="grid-2">
+          <div class="card"><strong>短时学习器负责</strong><br>把新词从陌生、模糊推进到当天初步掌握，时间尺度为秒到小时。</div>
+          <div class="card"><strong>长期调度器负责</strong><br>单词初步掌握后，决定未来几天、几十天后的复习时间。</div>
+        </div>
+        <div class="callout"><strong>核心原则：</strong>第一次认识可直接通过；模糊需要一次延迟后的完整回忆；忘记需要重新学习，并完成两次有间隔的成功回忆。</div>
+      </section>
+
+      <section id="states">
+        <h2>2. 状态定义</h2>
+        <table>
+          <thead><tr><th>内部状态</th><th>中文名称</th><th>含义</th></tr></thead>
+          <tbody>
+            <tr><td><code>NEW</code></td><td>第一次学习</td><td>当天第一次看到该单词，尚未产生反馈。</td></tr>
+            <tr><td><code>LEARNING_1</code></td><td>重新记忆</td><td>用户刚刚没想起来，需要重新编码并进行快速检查。</td></tr>
+            <tr><td><code>LEARNING_2</code></td><td>延迟验证</td><td>用户已有印象或刚成功回忆一次，需要隔开其他单词后再次验证。</td></tr>
+            <tr><td><code>HARD</code></td><td>困难词</td><td>当天多次忘记或反复退步，暂停普通循环，稍后更换方式再学。</td></tr>
+            <tr><td><code>GRADUATED</code></td><td>当天初步掌握</td><td>完成短时学习，移交长期复习调度器。</td></tr>
+          </tbody>
+        </table>
+        <h3>LEARNING 1：重新记忆</h3>
+        <p>进入条件：第一次选择“忘记”、延迟验证时再次忘记，或者长期复习时忘记。建议展示发音、核心释义、短例句/搭配，必要时追加词根、助记或易混词。</p>
+        <h3>LEARNING 2：延迟验证</h3>
+        <p>进入条件：第一次选择“模糊”，或者在 LEARNING 1 中选择“认识”。它的作用是排除刚看过答案造成的短时视觉熟悉感。</p>
+      </section>
+
+      <section id="transitions">
+        <h2>3. 状态转移规则</h2>
+        <div class="flow">
+          <div class="node">NEW<small>第一次学习</small></div><div class="arrow">→</div><div class="node">L1 / L2<small>重新记忆或延迟验证</small></div>
+          <div class="node">L1<small>认识后进入 L2</small></div><div class="arrow">→</div><div class="node">L2<small>再次认识才毕业</small></div>
+          <div class="node">多次忘记<small>达到困难词条件</small></div><div class="arrow">→</div><div class="node">HARD<small>30分钟后重返 L1</small></div>
+        </div>
+        <table>
+          <thead><tr><th>当前状态</th><th>认识 KNOW</th><th>模糊 FUZZY</th><th>忘记 FORGET</th></tr></thead>
+          <tbody>
+            <tr><td>NEW</td><td>直接 GRADUATED</td><td>进入 L2</td><td>进入 L1</td></tr>
+            <tr><td>L1</td><td>进入 L2</td><td>留在 L1</td><td>留在 L1</td></tr>
+            <tr><td>L2</td><td>进入 GRADUATED</td><td>留在 L2</td><td>退回 L1</td></tr>
+            <tr><td>HARD</td><td>进入 L2</td><td>稍后继续</td><td>继续困难词处理</td></tr>
+          </tbody>
+        </table>
+        <div class="callout warn"><strong>毕业标准：</strong>第一次模糊，需要之后完成1次延迟、无提示的认识；第一次忘记，需要在 L1 和 L2 中分别成功回忆，合计2次有间隔的认识。</div>
+      </section>
+
+      <section id="intervals">
+        <h2>4. 第一版间隔参数</h2>
+        <table>
+          <thead><tr><th>状态变化</th><th>最少间隔卡片</th><th>最短时间</th><th>最长等待</th></tr></thead>
+          <tbody>
+            <tr><td>NEW忘记 → L1</td><td>2张</td><td>30秒</td><td>90秒</td></tr>
+            <tr><td>NEW模糊 → L2</td><td>4张</td><td>2分钟</td><td>5分钟</td></tr>
+            <tr><td>L1认识 → L2</td><td>5张</td><td>3分钟</td><td>8分钟</td></tr>
+            <tr><td>L1模糊 → L1</td><td>3张</td><td>1分钟</td><td>3分钟</td></tr>
+            <tr><td>L1忘记 → L1</td><td>2张</td><td>30秒</td><td>90秒</td></tr>
+            <tr><td>L2模糊 → L2</td><td>5张</td><td>3分钟</td><td>8分钟</td></tr>
+            <tr><td>L2忘记 → L1</td><td>2张</td><td>45秒</td><td>2分钟</td></tr>
+            <tr><td>HARD → L1</td><td>不限制</td><td>30分钟</td><td>当天再次学习</td></tr>
+          </tbody>
+        </table>
+        <h3>三个参数分别代表什么</h3>
+        <ul>
+          <li><strong>最少间隔卡片：</strong>同一单词两次出现之间，至少经过多少张其他单词卡，防止连续机械重复。</li>
+          <li><strong>最短时间：</strong>即使卡片数已经达到，也必须经过的最短时间，防止用户快速滑动。</li>
+          <li><strong>最长等待：</strong>如果卡片数量一直不足，到达该时间后也允许出现，防止单词永久被压在队列后面。</li>
+        </ul>
+        <pre><code>canShowAgain =
+  (cardsSinceLastSeen &gt;= minCards &amp;&amp; elapsedSeconds &gt;= minSeconds)
+  || elapsedSeconds &gt;= maxSeconds</code></pre>
+        <p>例：忘记后规则为“2张卡、30秒、90秒”。隔2张卡但只过20秒不能出现；隔2张卡且过40秒可以出现；只隔1张卡但已过90秒，也可以兜底出现。</p>
+      </section>
+
+      <section id="batching">
+        <h2>5. 新学10、50、100个词的处理</h2>
+        <p>统一采用“每批10个＋动态穿插＋最多15个处于学习中”。分批只是内部策略，用户不需要明显感知。</p>
+        <table>
+          <thead><tr><th>每日新词量</th><th>内部分批</th><th>运行方式</th></tr></thead>
+          <tbody>
+            <tr><td>10个</td><td>1批 × 10</td><td>新词与到期的 L1/L2 穿插。</td></tr>
+            <tr><td>50个</td><td>5批 × 10</td><td>上一批的延迟验证可以穿插进下一批。</td></tr>
+            <tr><td>100个</td><td>10批 × 10</td><td>在学词达到15个时暂停新增，清理后继续。</td></tr>
+          </tbody>
+        </table>
+        <div class="callout"><strong>准入控制：</strong>同时处于 L1/L2 的单词最多15个；连续新词最多5张；普通词当天最多出现5次。不能“先过完100个新词，再回头复习”。</div>
+      </section>
+
+      <section id="queue">
+        <h2>6. 动态队列与选卡优先级</h2>
+        <p>系统至少维护新词队列、L1队列、L2队列、困难词队列；长期复习词还可以作为等待期间的填充内容。</p>
+        <ol>
+          <li>已经达到最长等待的卡片（防止饿死）。</li>
+          <li>已到期的 L1 重新记忆词。</li>
+          <li>已到期的 L2 延迟验证词。</li>
+          <li>当前批次的 NEW 新词（在学词少于15个）。</li>
+          <li>到期的长期复习词。</li>
+          <li>下一批新词。</li>
+        </ol>
+        <p>如果当前没有任何可展示卡片，不要反复展示同一个词。可以展示长期复习词，或者结束当前小轮，把未到期词放入“今日待巩固”。</p>
+      </section>
+
+      <section id="hard">
+        <h2>7. 困难词处理</h2>
+        <p>满足任意一项即进入 HARD：</p>
+        <ul>
+          <li>当天累计选择“忘记”达到3次；</li>
+          <li>当天出现5次仍未毕业；</li>
+          <li>从 L2 退回 L1 达到2次；</li>
+          <li>连续出现同一种错误或混淆。</li>
+        </ul>
+        <div class="callout danger"><strong>不要无限轰炸：</strong>HARD词移出普通队列，换用发音、例句、词根或易混词对比，30分钟后再回到 L1；当天仍无法掌握则第二天优先复习。</div>
+      </section>
+
+      <section id="model">
+        <h2>8. TypeScript数据模型</h2>
+        <pre><code>export type LearningState =
+  | 'NEW'
+  | 'LEARNING_1'
+  | 'LEARNING_2'
+  | 'HARD'
+  | 'GRADUATED'
+
+export type LearningRating = 'KNOW' | 'FUZZY' | 'FORGET'
+
+export interface IntervalRule {
+  minCards: number
+  minSeconds: number
+  maxSeconds: number
+}
+
+export interface ShortTermWord {
+  wordId: string
+  state: LearningState
+  intervalRule?: IntervalRule
+  lastRatedAt?: number
+  lastSeenSequence?: number
+  exposureCountToday: number
+  forgetCountToday: number
+  downgradeCountToday: number
+  hintUsed: boolean
+  nextDueAt?: number
+  hardDueAt?: number
+  firstRating?: LearningRating
+}</code></pre>
+        <h3>间隔配置</h3>
+        <pre><code>export const INTERVAL_RULES = {
+  NEW_FORGET: { minCards: 2, minSeconds: 30,  maxSeconds: 90 },
+  NEW_FUZZY:  { minCards: 4, minSeconds: 120, maxSeconds: 300 },
+  L1_KNOW:    { minCards: 5, minSeconds: 180, maxSeconds: 480 },
+  L1_FUZZY:   { minCards: 3, minSeconds: 60,  maxSeconds: 180 },
+  L1_FORGET:  { minCards: 2, minSeconds: 30,  maxSeconds: 90 },
+  L2_FUZZY:   { minCards: 5, minSeconds: 180, maxSeconds: 480 },
+  L2_FORGET:  { minCards: 2, minSeconds: 45,  maxSeconds: 120 }
+} satisfies Record&lt;string, IntervalRule&gt;</code></pre>
+      </section>
+
+      <section id="algorithm">
+        <h2>9. 核心TypeScript算法</h2>
+        <h3>调度与毕业</h3>
+        <pre><code>function schedule(
+  card: ShortTermWord,
+  state: LearningState,
+  rule: IntervalRule,
+  now: number
+): ShortTermWord {
+  return {
+    ...card,
+    state,
+    intervalRule: rule,
+    nextDueAt: now + rule.minSeconds * 1000
+  }
+}
+
+function graduate(card: ShortTermWord): ShortTermWord {
+  return {
+    ...card,
+    state: 'GRADUATED',
+    intervalRule: undefined,
+    nextDueAt: undefined
+  }
+}
+
+function shouldEnterHard(card: ShortTermWord): boolean {
+  return card.forgetCountToday &gt;= 3
+    || card.exposureCountToday &gt;= 5
+    || card.downgradeCountToday &gt;= 2
+}
+
+function enterHardState(card: ShortTermWord, now: number): ShortTermWord {
+  return {
+    ...card,
+    state: 'HARD',
+    intervalRule: undefined,
+    nextDueAt: undefined,
+    hardDueAt: now + 30 * 60 * 1000
+  }
+}</code></pre>
+        <h3>处理用户反馈</h3>
+        <pre><code>export function applyRating(
+  card: ShortTermWord,
+  rating: LearningRating,
+  now: number,
+  currentSequence: number
+): ShortTermWord {
+  const updated: ShortTermWord = {
+    ...card,
+    exposureCountToday: card.exposureCountToday + 1,
+    forgetCountToday:
+      card.forgetCountToday + (rating === 'FORGET' ? 1 : 0),
+    lastRatedAt: now,
+    lastSeenSequence: currentSequence,
+    firstRating:
+      card.firstRating ?? (card.state === 'NEW' ? rating : undefined)
+  }
+
+  let next: ShortTermWord
+
+  switch (card.state) {
+    case 'NEW':
+      if (rating === 'KNOW') return graduate(updated)
+      next = rating === 'FUZZY'
+        ? schedule(updated, 'LEARNING_2', INTERVAL_RULES.NEW_FUZZY, now)
+        : schedule(updated, 'LEARNING_1', INTERVAL_RULES.NEW_FORGET, now)
+      break
+
+    case 'LEARNING_1':
+      if (rating === 'KNOW') {
+        next = schedule(updated, 'LEARNING_2', INTERVAL_RULES.L1_KNOW, now)
+      } else if (rating === 'FUZZY') {
+        next = schedule(updated, 'LEARNING_1', INTERVAL_RULES.L1_FUZZY, now)
+      } else {
+        next = schedule(updated, 'LEARNING_1', INTERVAL_RULES.L1_FORGET, now)
+      }
+      break
+
+    case 'LEARNING_2':
+      if (rating === 'KNOW') return graduate(updated)
+      if (rating === 'FUZZY') {
+        next = schedule(updated, 'LEARNING_2', INTERVAL_RULES.L2_FUZZY, now)
+      } else {
+        updated.downgradeCountToday += 1
+        next = schedule(updated, 'LEARNING_1', INTERVAL_RULES.L2_FORGET, now)
+      }
+      break
+
+    case 'HARD':
+      next = rating === 'KNOW'
+        ? schedule(updated, 'LEARNING_2', INTERVAL_RULES.L1_KNOW, now)
+        : enterHardState(updated, now)
+      break
+
+    case 'GRADUATED':
+      return updated
+  }
+
+  return next.state !== 'GRADUATED' &amp;&amp; shouldEnterHard(next)
+    ? enterHardState(next, now)
+    : next
+}</code></pre>
+        <h3>判断能否再次出现</h3>
+        <pre><code>export function isEligible(
+  card: ShortTermWord,
+  now: number,
+  currentSequence: number
+): boolean {
+  if (card.state === 'GRADUATED') return false
+  if (card.state === 'NEW') return true
+
+  if (card.state === 'HARD') {
+    return card.hardDueAt !== undefined &amp;&amp; now &gt;= card.hardDueAt
+  }
+
+  if (!card.intervalRule
+      || card.lastRatedAt === undefined
+      || card.lastSeenSequence === undefined) {
+    return false
+  }
+
+  const elapsedSeconds = (now - card.lastRatedAt) / 1000
+  const cardsSinceLastSeen = currentSequence - card.lastSeenSequence
+
+  return (
+    cardsSinceLastSeen &gt;= card.intervalRule.minCards
+    &amp;&amp; elapsedSeconds &gt;= card.intervalRule.minSeconds
+  ) || elapsedSeconds &gt;= card.intervalRule.maxSeconds
+}</code></pre>
+        <h3>选择下一张卡</h3>
+        <pre><code>export function getNextCard(
+  cards: ShortTermWord[],
+  now: number,
+  currentSequence: number
+): ShortTermWord | null {
+  const eligible = cards.filter(card =&gt;
+    isEligible(card, now, currentSequence)
+  )
+
+  // 1. 最长等待已到：绝对优先
+  const forced = eligible
+    .filter(card =&gt; {
+      if (!card.intervalRule || card.lastRatedAt === undefined) return false
+      return now - card.lastRatedAt &gt;=
+        card.intervalRule.maxSeconds * 1000
+    })
+    .sort((a, b) =&gt; (a.lastRatedAt ?? 0) - (b.lastRatedAt ?? 0))
+  if (forced[0]) return forced[0]
+
+  // 2. 快速重新记忆
+  const learning1 = eligible
+    .filter(card =&gt; card.state === 'LEARNING_1')
+    .sort((a, b) =&gt; (a.nextDueAt ?? 0) - (b.nextDueAt ?? 0))
+  if (learning1[0]) return learning1[0]
+
+  // 3. 延迟验证
+  const learning2 = eligible
+    .filter(card =&gt; card.state === 'LEARNING_2')
+    .sort((a, b) =&gt; (a.nextDueAt ?? 0) - (b.nextDueAt ?? 0))
+  if (learning2[0]) return learning2[0]
+
+  // 4. 控制同时学习中的单词数量
+  const activeCount = cards.filter(card =&gt;
+    card.state === 'LEARNING_1' || card.state === 'LEARNING_2'
+  ).length
+
+  if (activeCount &lt; 15) {
+    return cards.find(card =&gt; card.state === 'NEW') ?? null
+  }
+
+  return null
+}</code></pre>
+        <div class="callout warn"><strong>工程注意：</strong>还需在调用层限制“连续新词最多5张”和“不能立即返回上一张同一单词”。当 <code>getNextCard()</code> 返回空时，再尝试长期复习词或结束本轮。</div>
+      </section>
+
+      <section id="logging">
+        <h2>10. 必须记录的学习日志</h2>
+        <pre><code>export interface ShortTermLearningEvent {
+  eventId: string
+  userId: string
+  wordId: string
+  stateBefore: LearningState
+  stateAfter: LearningState
+  rating: LearningRating
+  shownAt: number
+  answerRevealedAt: number
+  ratedAt: number
+  recallTimeMs: number
+  sequence: number
+  cardsSinceLastSeen: number
+  secondsSinceLastSeen: number
+  exposureCountToday: number
+  forgetCountToday: number
+  downgradeCountToday: number
+  audioPlayed: boolean
+  hintUsed: boolean
+  algorithmVersion: 'short-term-v1'
+}</code></pre>
+        <p>原始事件日志不能只保留最终状态。后续优化“30秒还是60秒”“隔3张还是5张”全部依赖这些数据。</p>
+      </section>
+
+      <section id="tests">
+        <h2>11. 第一版验收测试</h2>
+        <table>
+          <thead><tr><th>编号</th><th>输入路径</th><th>预期结果</th></tr></thead>
+          <tbody>
+            <tr><td>T01</td><td>NEW → 认识</td><td>立即进入 GRADUATED，当天不再出现。</td></tr>
+            <tr><td>T02</td><td>NEW → 模糊</td><td>进入 L2；未到2分钟且未达最长等待时不得出现。</td></tr>
+            <tr><td>T03</td><td>NEW → 模糊 → L2认识</td><td>进入 GRADUATED。</td></tr>
+            <tr><td>T04</td><td>NEW → 忘记</td><td>进入 L1；隔2张且过30秒后可出现。</td></tr>
+            <tr><td>T05</td><td>NEW忘记 → L1认识</td><td>进入 L2，不能直接毕业。</td></tr>
+            <tr><td>T06</td><td>NEW忘记 → L1认识 → L2认识</td><td>完成两次成功回忆后毕业。</td></tr>
+            <tr><td>T07</td><td>连续忘记3次</td><td>进入 HARD，普通队列不再立即展示。</td></tr>
+            <tr><td>T08</td><td>隔2张卡但只过20秒</td><td>不满足最短时间，不可出现。</td></tr>
+            <tr><td>T09</td><td>只隔1张卡但已过最长等待</td><td>触发兜底，可以出现。</td></tr>
+            <tr><td>T10</td><td>100词且在学词达到15个</td><td>暂停新增，优先处理 L1/L2。</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section id="integration">
+        <h2>12. 与长期复习调度衔接</h2>
+        <p>进入 GRADUATED 后，短时学习结束，调用长期调度器初始化单词记忆状态。SSP-MMC尚未接入前，可以使用临时规则：</p>
+        <table>
+          <thead><tr><th>当天学习路径</th><th>临时首次跨天复习</th><th>难度种子</th></tr></thead>
+          <tbody>
+            <tr><td>第一次直接认识</td><td>3天后</td><td>简单</td></tr>
+            <tr><td>第一次模糊，随后毕业</td><td>2天后</td><td>中等</td></tr>
+            <tr><td>第一次忘记，随后毕业</td><td>1天后</td><td>较难</td></tr>
+            <tr><td>进入过 HARD</td><td>第二天</td><td>困难</td></tr>
+          </tbody>
+        </table>
+        <p>未来接入 SSP-MMC 时，只替换毕业后的长期间隔计算，短时状态机本身无需推翻。</p>
+      </section>
+
+      <section id="checklist">
+        <h2>13. 开发实施清单</h2>
+        <ul class="checklist">
+          <li>建立 NEW、L1、L2、HARD、GRADUATED 五个状态。</li>
+          <li>实现三种反馈对应的状态转移。</li>
+          <li>实现卡片间隔数和经过时间的双重判断。</li>
+          <li>实现最长等待兜底。</li>
+          <li>每日新词按10个一批加载。</li>
+          <li>在学词达到15个时暂停开放新词。</li>
+          <li>实现困难词条件和30分钟延后。</li>
+          <li>记录每一次学习事件，而不是只记录最终结果。</li>
+          <li>完成至少10项验收测试。</li>
+          <li>为后续SSP-MMC保留长期调度接口。</li>
+        </ul>
+        <div class="callout"><strong>建议模块名：</strong><code>shortTermScheduler.ts</code>、<code>learningSession.store.ts</code>、<code>learningEvent.repository.ts</code>。算法版本统一写入 <code>short-term-v1</code>，方便以后灰度升级和对比。</div>
+      </section>
+
+      <div class="footer">知觅英语 · 短时学习调度器 V1 · 开发实现指南</div>
+    </main>
+  </div>
+</body>
+</html>

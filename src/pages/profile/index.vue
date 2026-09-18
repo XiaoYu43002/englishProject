@@ -5,7 +5,7 @@ import BrandLogo from '@/components/BrandLogo.vue'
 import { useLearningStore } from '@/stores/learning'
 
 const store = useLearningStore()
-const menus = ['学习档案', '我的词书', '发音设置', '拍词记录', '学习目标', '设置']
+const menus = ['学习档案', '我的词书', '发音设置', '拍词记录', '学习计划', '设置']
 
 const displayName = computed(() => {
   const user = store.authUser
@@ -19,6 +19,10 @@ const loginHint = computed(() => {
   return '已登录'
 })
 
+const planHint = computed(
+  () => `${store.activeBook.shortTitle} · 每日新学 ${store.todayTarget} 词`,
+)
+
 function openMenu(name: string) {
   if (name === '我的词书') {
     uni.navigateTo({ url: '/pages/books/index' })
@@ -30,6 +34,10 @@ function openMenu(name: string) {
   }
   if (name === '拍词记录') {
     uni.navigateTo({ url: '/pages/scan-history/index' })
+    return
+  }
+  if (name === '学习计划' || name === '学习目标') {
+    uni.navigateTo({ url: '/pages/learning-plan/index' })
     return
   }
   uni.showToast({ title: `${name}待接入`, icon: 'none' })
@@ -61,7 +69,7 @@ function handleLogout() {
       <BrandLogo :size="58" />
       <view class="profile-head__text">
         <text class="profile-head__name">{{ displayName }}</text>
-        <text class="profile-head__goal">{{ loginHint }} · 当前目标：考研英语 · 四六级词汇</text>
+        <text class="profile-head__goal">{{ loginHint }} · {{ planHint }}</text>
       </view>
     </view>
 

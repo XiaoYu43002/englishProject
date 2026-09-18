@@ -7,21 +7,40 @@ const store = useLearningStore()
 function go(url: string) {
   uni.navigateTo({ url })
 }
+
+function continueLearning() {
+  const result = store.startTodayLearning()
+  if (!result.ok && result.reason === 'no-words') {
+    uni.showToast({ title: '当前词书暂无可学新词', icon: 'none' })
+    return
+  }
+  if (!result.ok && result.reason === 'waiting') {
+    const sec = 'waitSeconds' in result ? result.waitSeconds : 0
+    uni.showToast({
+      title: sec ? `约 ${sec} 秒后可继续巩固` : '间隔巩固中，稍候',
+      icon: 'none',
+    })
+  }
+  go('/pages/word/index')
+}
 </script>
 
 <template>
   <view class="screen home-screen">
     <text class="home-greeting">下午好，继续今天的学习</text>
     <text class="home-title">今天，先掌握 {{ store.todayTarget }} 个词</text>
+    <text class="home-plan" @tap="go('/pages/learning-plan/index')">
+      {{ store.activeBook.shortTitle }} · 调整学习计划 ›
+    </text>
 
     <view class="today-card card">
       <text class="today-card__label">今日计划</text>
       <view class="today-card__main">
         <text class="today-card__number">{{ store.remaining }}</text>
-        <text class="today-card__unit">个待学习</text>
+        <text class="today-card__unit">个待巩固</text>
       </view>
-      <text class="today-card__review">{{ store.reviewCount }} 个待复习</text>
-      <button class="today-card__button pressable" @tap="go('/pages/word/index')">继续学习 →</button>
+      <text class="today-card__review">已初步掌握 {{ store.shortTermStats.graduated }} · 在学 {{ store.shortTermStats.learning }}</text>
+      <button class="today-card__button pressable" @tap="continueLearning">继续学习 →</button>
     </view>
 
     <view class="feature-grid">
@@ -70,6 +89,14 @@ function go(url: string) {
   font-size: 27px;
   line-height: 38px;
   font-weight: 700;
+}
+
+.home-plan {
+  display: block;
+  margin-top: 6px;
+  color: #3d7564;
+  font-size: 13px;
+  font-weight: 600;
 }
 
 .today-card {

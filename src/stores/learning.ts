@@ -1,6 +1,18 @@
 import { defineStore } from 'pinia'
 import { fetchBookWords, getLocalWords, localBooks } from '@/services/catalog'
+import { createSessionSnapshot, getEarliestDueInfo, getNextCard, localLearningDate } from '@/services/shortTermScheduler'
+import {
+  loadShortTermSession,
+  markCardShown,
+  rateShortTermCard,
+  resolveVocabulary,
+  saveShortTermSession,
+  sessionStats,
+  startOrResumeSession,
+  type RecallUiRating,
+} from '@/services/shortTermSession'
 import type { AuthUser, BookProgress, LearningWord, LoginMethod, OcrCandidate, ScanAddTarget, ScanHistoryRecord, SemanticDomain, VocabularyWord, WordBook } from '@/types/domain'
+import type { ShortTermSessionSnapshot } from '@/types/shortTermLearning'
 import { meaningsForBook } from '@/utils/meanings'
 import { isOcrStopword, normalizeWordKey } from '@/utils/ocrFilters'
 
@@ -29,6 +41,14 @@ interface LearningState {
   bookProgress: Record<string, BookProgress>
   currentWord: LearningWord
   loadingBook: boolean
+  /** 当天短时学习会话（FSM） */
+  shortTermSession: ShortTermSessionSnapshot | null
+  /** 当前词展示时间（埋点） */
+  currentShownAt: number
+  currentAudioPlayed: boolean
+  /** 短时队列暂无到期词时的等待提示 */
+  sessionWaiting: boolean
+  nextDueInSeconds: number
 }
 
 const domains: SemanticDomain[] = [
@@ -72,6 +92,15 @@ const storedKoWords = ((uni.getStorageSync('zhimi-ko-words') || []) as string[])
 const storedScanHistory = ((uni.getStorageSync('zhimi-scan-history') || []) as ScanHistoryRecord[])
   .filter((item) => item && item.id && Array.isArray(item.words))
   .slice(0, 100)
+const storedShortTermSession = loadShortTermSession()
+const storedTodayTargetRaw = Number(uni.getStorageSync('zhimi-today-target') || 0)
+const initialTodayTarget =
+  (storedTodayTargetRaw > 0 ? storedTodayTargetRaw : 0)
+  || storedShortTermSession?.dailyTarget
+  || 20
+const initialRemaining = storedShortTermSession
+  ? sessionStats(storedShortTermSession).remaining
+  : initialTodayTarget
 
 function toLearningWord(word: VocabularyWord, bookId?: string): LearningWord {
   const activeBookId = bookId || word.activeBookId || word.bookIds?.[0] || ''
@@ -104,8 +133,8 @@ export const useLearningStore = defineStore('learning', {
     loginMethod: storedLoginMethod,
     authToken: storedAuthToken,
     authUser: storedAuthUser,
-    todayTarget: 28,
-    remaining: 28,
+    todayTarget: initialTodayTarget,
+    remaining: initialRemaining,
     reviewCount: 12,
     masteredCount: 326,
     streakDays: 18,
@@ -123,11 +152,19 @@ export const useLearningStore = defineStore('learning', {
     bookProgress: { ...initialProgress, ...(storedProgress || {}) },
     currentWord: toLearningWord(firstWord, storedBookId === 'custom' ? 'custom' : storedBookId),
     loadingBook: false,
+    shortTermSession: storedShortTermSession,
+    currentShownAt: 0,
+    currentAudioPlayed: false,
+    sessionWaiting: false,
+    nextDueInSeconds: 0,
   }),
   getters: {
     isLoggedIn: (state) => Boolean(state.authToken),
     exploredCount: (state) => state.domains.filter((item) => item.explored).length,
-    progress: (state) => Math.round(((state.todayTarget - state.remaining) / state.todayTarget) * 100),
+    progress: (state) => {
+      if (!state.todayTarget) return 0
+      return Math.round(((state.todayTarget - state.remaining) / state.todayTarget) * 100)
+    },
     activeBook: (state) => state.books.find((book) => book.id === state.selectedBookId) || state.books[0],
     activeWords: (state) => {
       const ko = new Set(state.koWords)
@@ -138,6 +175,7 @@ export const useLearningStore = defineStore('learning', {
       const key = normalizeWordKey(state.currentWord.word || state.currentWord.id || '')
       return Boolean(key) && state.koWords.includes(key)
     },
+    shortTermStats: (state) => sessionStats(state.shortTermSession),
   },
   actions: {
     persistKoWords() {
@@ -300,13 +338,18 @@ export const useLearningStore = defineStore('learning', {
       if (target === 'today' && selected.length) {
         this.selectedBookId = 'custom'
         uni.setStorageSync('zhimi-selected-book', 'custom')
-        const learnable = this.learnableWords('custom')
-        const first = learnable.find((item) => selected.some((row) => row.normalized === item.id)) || learnable[0]
-        if (first) {
-          const index = this.personalWords.findIndex((item) => item.id === first.id)
-          this.openWord(Math.max(0, index))
-        }
-        this.remaining += additions.length
+        const selectedIds = selected.map((row) => row.normalized)
+        const session = createSessionSnapshot({
+          learningDate: localLearningDate(),
+          bookId: 'custom',
+          dailyTarget: selectedIds.length,
+          wordIds: selectedIds,
+        })
+        this.shortTermSession = session
+        this.todayTarget = selectedIds.length
+        this.syncRemainingFromSession()
+        saveShortTermSession(session)
+        this.showNextShortTermCard()
       }
       return { selected: selected.length, added: additions.length }
     },
@@ -344,6 +387,13 @@ export const useLearningStore = defineStore('learning', {
     },
     setCurrentWord(word: VocabularyWord) {
       this.currentWord = toLearningWord(word, this.selectedBookId)
+      this.currentShownAt = Date.now()
+      this.currentAudioPlayed = false
+      if (this.shortTermSession) {
+        const wordId = normalizeWordKey(word.word || word.id)
+        this.shortTermSession = markCardShown(this.shortTermSession, wordId, this.currentShownAt)
+        saveShortTermSession(this.shortTermSession)
+      }
     },
     openWord(index: number) {
       const words = this.bookWords[this.selectedBookId] || []
@@ -354,18 +404,225 @@ export const useLearningStore = defineStore('learning', {
       this.setCurrentWord(words[progress.currentIndex])
       this.persistProgress()
     },
-    markCurrentWord(result: boolean | 'know' | 'fuzzy' | 'forgot' = true) {
-      const state = result === true || result === 'know'
+    noteAudioPlayed() {
+      this.currentAudioPlayed = true
+    },
+    syncRemainingFromSession() {
+      if (!this.shortTermSession) return
+      const stats = sessionStats(this.shortTermSession)
+      this.remaining = stats.remaining
+    },
+    persistTodayTarget() {
+      uni.setStorageSync('zhimi-today-target', this.todayTarget)
+    },
+    async setLearningPlan(input: {
+      bookId: string
+      dailyTarget: number
+      restartToday?: boolean
+    }) {
+      const dailyTarget = Math.min(200, Math.max(1, Math.round(Number(input.dailyTarget) || 20)))
+      this.todayTarget = dailyTarget
+      this.persistTodayTarget()
+
+      if (input.bookId && input.bookId !== this.selectedBookId) {
+        await this.selectBook(input.bookId)
+      } else if (input.bookId === this.selectedBookId && !this.bookWords[input.bookId]?.length) {
+        await this.loadBook(input.bookId)
+      }
+
+      const restart = input.restartToday !== false
+      if (restart) {
+        this.ensureShortTermSession({ dailyTarget, forceRestart: true })
+      } else {
+        this.remaining = dailyTarget
+      }
+
+      return {
+        bookId: this.selectedBookId,
+        dailyTarget: this.todayTarget,
+        restarted: restart,
+      }
+    },
+    ensureShortTermSession(options?: { dailyTarget?: number; forceRestart?: boolean }) {
+      const dailyTarget = options?.dailyTarget ?? this.todayTarget ?? 20
+      if (options?.forceRestart) {
+        saveShortTermSession(null)
+        this.shortTermSession = null
+      }
+      const words = this.learnableWords(this.selectedBookId)
+      const session = startOrResumeSession({
+        bookId: this.selectedBookId,
+        words,
+        koWords: this.koWords,
+        dailyTarget,
+      })
+      this.shortTermSession = session
+      this.syncRemainingFromSession()
+      saveShortTermSession(session)
+      return session
+    },
+    showNextShortTermCard(preferredWordId?: string | null) {
+      if (!this.shortTermSession) return false
+      const now = Date.now()
+      const pick = preferredWordId
+        ? { card: this.shortTermSession.cards.find((c) => c.wordId === preferredWordId) || null }
+        : getNextCard(
+          this.shortTermSession.cards,
+          now,
+          this.shortTermSession.sequence,
+          {
+            consecutiveNewCount: this.shortTermSession.consecutiveNewCount,
+            newWordsPaused: this.shortTermSession.newWordsPaused,
+            introducedLimit: this.shortTermSession.introducedLimit,
+            lastWordId: this.shortTermSession.lastWordId,
+          },
+        )
+      if (
+        pick
+        && 'introducedLimit' in pick
+        && typeof pick.introducedLimit === 'number'
+        && pick.introducedLimit > this.shortTermSession.introducedLimit
+      ) {
+        this.shortTermSession = {
+          ...this.shortTermSession,
+          introducedLimit: pick.introducedLimit,
+        }
+        saveShortTermSession(this.shortTermSession)
+      }
+      const nextId = pick.card?.wordId
+      if (!nextId) {
+        const due = getEarliestDueInfo(
+          this.shortTermSession.cards,
+          now,
+          this.shortTermSession.sequence,
+        )
+        this.sessionWaiting = true
+        this.nextDueInSeconds = due?.waitSeconds ?? 0
+        return false
+      }
+      const vocab = resolveVocabulary(
+        this.bookWords[this.shortTermSession.bookId] || this.learnableWords(this.selectedBookId),
+        nextId,
+      )
+      if (!vocab) return false
+      const words = this.bookWords[this.selectedBookId] || []
+      const index = words.findIndex(
+        (item) => normalizeWordKey(item.word || item.id) === nextId,
+      )
+      if (index >= 0) {
+        const progress = this.bookProgress[this.selectedBookId] || { learned: 0, mastered: 0, currentIndex: 0 }
+        progress.currentIndex = index
+        this.bookProgress[this.selectedBookId] = progress
+        this.persistProgress()
+      }
+      this.sessionWaiting = false
+      this.nextDueInSeconds = 0
+      this.setCurrentWord(vocab)
+      return true
+    },
+    /** 等待结束后再取下一张；返回是否已恢复 */
+    tryResumeShortTermSession() {
+      if (!this.shortTermSession) return false
+      const shown = this.showNextShortTermCard()
+      if (shown) return true
+      const due = getEarliestDueInfo(
+        this.shortTermSession.cards,
+        Date.now(),
+        this.shortTermSession.sequence,
+      )
+      this.sessionWaiting = true
+      this.nextDueInSeconds = due?.waitSeconds ?? 0
+      return false
+    },
+    startTodayLearning(dailyTarget?: number) {
+      const session = this.ensureShortTermSession({
+        dailyTarget: dailyTarget ?? this.todayTarget,
+      })
+      if (!session.cards.length) {
+        this.sessionWaiting = false
+        return { ok: false as const, reason: 'no-words' as const }
+      }
+      const shown = this.showNextShortTermCard()
+      return shown
+        ? { ok: true as const }
+        : { ok: false as const, reason: 'waiting' as const, waitSeconds: this.nextDueInSeconds }
+    },
+    markCurrentWord(
+      result: boolean | 'know' | 'fuzzy' | 'forgot' = true,
+      meta?: { answerRevealedAt?: number; hintUsed?: boolean },
+    ) {
+      const uiRating: RecallUiRating = result === true || result === 'know'
         ? 'know'
         : result === 'fuzzy'
           ? 'fuzzy'
           : 'forgot'
-      this.currentWord.mastered = state === 'know'
+
+      // 短时会话优先：当天新词 FSM
+      if (this.shortTermSession?.cards?.length) {
+        const wordId = normalizeWordKey(this.currentWord.word || this.currentWord.id || '')
+        if (!wordId) return
+
+        const rated = rateShortTermCard(this.shortTermSession, wordId, uiRating, {
+          userId: this.authUser?.id || 'anonymous',
+          shownAt: this.currentShownAt || Date.now(),
+          answerRevealedAt: meta?.answerRevealedAt,
+          audioPlayed: this.currentAudioPlayed,
+          hintUsed: meta?.hintUsed,
+        })
+
+        this.shortTermSession = rated.session
+        saveShortTermSession(rated.session)
+        this.syncRemainingFromSession()
+
+        const progress = this.bookProgress[this.selectedBookId] || { learned: 0, mastered: 0, currentIndex: 0 }
+        progress.learned = Math.min(
+          this.bookTotals[this.selectedBookId] || progress.learned + 1,
+          progress.learned + 1,
+        )
+        if (rated.graduated) {
+          progress.mastered += 1
+          this.masteredCount += 1
+        } else if (uiRating !== 'know') {
+          this.reviewCount += 1
+        }
+        this.bookProgress[this.selectedBookId] = progress
+        this.persistProgress()
+
+        let shown = false
+        if (rated.nextWordId) {
+          shown = this.showNextShortTermCard(rated.nextWordId)
+        }
+        if (!shown) {
+          shown = this.showNextShortTermCard()
+        }
+        if (!shown) {
+          const due = getEarliestDueInfo(
+            rated.session.cards,
+            Date.now(),
+            rated.session.sequence,
+          )
+          this.sessionWaiting = true
+          this.nextDueInSeconds = due?.waitSeconds ?? 0
+        }
+
+        return {
+          mode: 'short-term' as const,
+          graduated: rated.graduated,
+          nextWordId: rated.nextWordId,
+          longTermSeed: rated.longTermSeed,
+          waiting: !shown,
+          waitSeconds: this.nextDueInSeconds,
+        }
+      }
+
+      // 兼容：无短时会话时仍按旧顺序翻词
+      this.sessionWaiting = false
+      this.currentWord.mastered = uiRating === 'know'
       if (this.remaining > 0) this.remaining -= 1
       const words = this.bookWords[this.selectedBookId] || []
       const progress = this.bookProgress[this.selectedBookId] || { learned: 0, mastered: 0, currentIndex: 0 }
       progress.learned = Math.min(this.bookTotals[this.selectedBookId] || words.length, progress.learned + 1)
-      if (state === 'know') {
+      if (uiRating === 'know') {
         progress.mastered += 1
         this.masteredCount += 1
       } else {
@@ -378,6 +635,7 @@ export const useLearningStore = defineStore('learning', {
       }
       this.bookProgress[this.selectedBookId] = progress
       this.persistProgress()
+      return { mode: 'legacy' as const }
     },
     persistProgress() {
       uni.setStorageSync('zhimi-book-progress', this.bookProgress)

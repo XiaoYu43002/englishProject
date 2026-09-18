@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, onUnmounted, ref, watch } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import BottomNav from '@/components/BottomNav.vue'
 import { lookupWord, playWordAudio } from '@/services/dictionary'
@@ -16,6 +16,9 @@ const dictionary = ref<DictionaryResult | null>(null)
 const loading = ref(false)
 const playing = ref(false)
 const revealed = ref(false)
+const answerRevealedAt = ref(0)
+const waitLeft = ref(0)
+let waitTimer: ReturnType<typeof setInterval> | null = null
 
 const displayPhonetic = computed(() => {
   if (pronunciation.accent === 'uk' && store.currentWord.ukphone) return `/${store.currentWord.ukphone}/`
@@ -39,43 +42,130 @@ const rawMeanings = computed(() => {
 
 const meaningBlocks = computed(() => buildMeaningBlocks(rawMeanings.value))
 
+const sessionHint = computed(() => {
+  const stats = store.shortTermStats
+  if (!store.shortTermSession) return ''
+  return `今日 ${stats.graduated}/${stats.total} · 在学 ${stats.learning}`
+})
+
+const waitLabel = computed(() => {
+  const s = waitLeft.value
+  if (s <= 0) return '可以继续了'
+  if (s < 60) return `${s} 秒后继续`
+  const m = Math.floor(s / 60)
+  const r = s % 60
+  return r ? `${m} 分 ${r} 秒后继续` : `${m} 分钟后继续`
+})
+
+function clearWaitTimer() {
+  if (waitTimer) {
+    clearInterval(waitTimer)
+    waitTimer = null
+  }
+}
+
+function startWaitCountdown(seconds: number) {
+  clearWaitTimer()
+  waitLeft.value = Math.max(0, seconds)
+  if (waitLeft.value <= 0) {
+    store.tryResumeShortTermSession()
+    return
+  }
+  waitTimer = setInterval(() => {
+    waitLeft.value = Math.max(0, waitLeft.value - 1)
+    if (waitLeft.value > 0) return
+    clearWaitTimer()
+    const ok = store.tryResumeShortTermSession()
+    if (ok) {
+      loadDictionary()
+    } else {
+      waitLeft.value = store.nextDueInSeconds
+      if (waitLeft.value > 0) startWaitCountdown(waitLeft.value)
+    }
+  }, 1000)
+}
+
 watch(
   () => store.currentWord.word,
   () => {
     revealed.value = false
+    answerRevealedAt.value = 0
   },
 )
 
 async function loadDictionary() {
+  if (store.sessionWaiting) return
   const source = store.activeWords.find((item) => item.id === store.currentWord.id)
+    || store.activeWords.find((item) => item.word === store.currentWord.word)
   if (!source) return
   loading.value = true
   revealed.value = false
+  answerRevealedAt.value = 0
   dictionary.value = await lookupWord(source, store.selectedBookId)
   loading.value = false
 }
 
-onShow(loadDictionary)
+onShow(async () => {
+  if (!store.shortTermSession?.cards?.length) {
+    store.startTodayLearning()
+  } else if (store.sessionWaiting) {
+    store.tryResumeShortTermSession()
+    if (store.sessionWaiting) startWaitCountdown(store.nextDueInSeconds)
+  } else if (!store.currentWord?.word) {
+    store.showNextShortTermCard()
+  }
+  await loadDictionary()
+})
+
+onUnmounted(clearWaitTimer)
 
 async function pronounce() {
   const word = dictionary.value?.word || store.currentWord.word
   playing.value = true
   const result = await playWordAudio(word)
   playing.value = false
-  if (!result.ok) uni.showToast({ title: '发音失败', icon: 'none' })
+  if (!result.ok) {
+    uni.showToast({ title: '发音失败', icon: 'none' })
+    return
+  }
+  store.noteAudioPlayed()
 }
 
 function revealAnswer() {
-  if (!revealed.value) revealed.value = true
+  if (!revealed.value) {
+    revealed.value = true
+    answerRevealedAt.value = Date.now()
+  }
 }
 
 async function mark(state: RecallState) {
   if (!revealed.value) return
-  const tips = { know: '已掌握', fuzzy: '稍后再遇', forgot: '已加入复习' }
-  store.markCurrentWord(state)
+  const tips = { know: '已记录', fuzzy: '稍后验证', forgot: '重新记忆' }
+  const result = store.markCurrentWord(state, {
+    answerRevealedAt: answerRevealedAt.value || Date.now(),
+  })
   revealed.value = false
-  uni.showToast({ title: tips[state], icon: 'none' })
-  await loadDictionary()
+  answerRevealedAt.value = 0
+
+  if (result?.mode === 'short-term' && result.waiting) {
+    startWaitCountdown(result.waitSeconds || store.nextDueInSeconds)
+  } else if (result?.mode === 'short-term' && result.graduated) {
+    uni.showToast({ title: '今日初步掌握', icon: 'none' })
+  } else {
+    uni.showToast({ title: tips[state], icon: 'none' })
+  }
+  if (!store.sessionWaiting) await loadDictionary()
+}
+
+function resumeNow() {
+  const ok = store.tryResumeShortTermSession()
+  if (ok) {
+    clearWaitTimer()
+    loadDictionary()
+  } else {
+    startWaitCountdown(store.nextDueInSeconds)
+    uni.showToast({ title: '还没到复习时间', icon: 'none' })
+  }
 }
 
 async function markAsKo() {
@@ -92,8 +182,9 @@ async function markAsKo() {
 </script>
 
 <template>
-  <view class="word-page" :class="{ 'word-page--revealed': revealed }">
+  <view class="word-page" :class="{ 'word-page--revealed': revealed && !store.sessionWaiting }">
     <view class="word-topbar">
+      <text v-if="sessionHint" class="word-topbar__session">{{ sessionHint }}</text>
       <view
         class="ko-btn pressable"
         :class="{ 'ko-btn--on': store.isCurrentWordKo }"
@@ -103,61 +194,75 @@ async function markAsKo() {
       </view>
     </view>
 
-    <view class="word-hero">
-      <view class="word-hero__cluster">
-        <text class="word-hero__word">{{ store.currentWord.word }}</text>
-        <view
-          class="word-hero__sound pressable"
-          :class="{ 'word-hero__sound--loading': playing || loading, 'word-hero__sound--playing': playing }"
-          @tap.stop="pronounce"
-        >
-          <view class="wifi-wave">
-            <view class="wifi-wave__arc wifi-wave__arc--1" />
-            <view class="wifi-wave__arc wifi-wave__arc--2" />
-            <view class="wifi-wave__arc wifi-wave__arc--3" />
-          </view>
-        </view>
-      </view>
-      <text class="word-hero__phonetic">{{ displayPhonetic || '音标待补充' }}</text>
+    <view v-if="store.sessionWaiting" class="wait-panel">
+      <text class="wait-panel__title">本轮词都在间隔中</text>
+      <text class="wait-panel__desc">
+        今日目标里的词都学过一遍了，正在等巩固间隔。一般只有全部词都冷却完才会停一下。
+      </text>
+      <text class="wait-panel__clock">{{ waitLabel }}</text>
+      <text class="wait-panel__meta">
+        在学 {{ store.shortTermStats.learning }} · 已掌握 {{ store.shortTermStats.graduated }}
+      </text>
+      <button class="wait-panel__btn pressable" @tap="resumeNow">到点后点此继续</button>
     </view>
 
-    <view class="word-body" @tap="revealAnswer">
-      <scroll-view v-if="revealed" scroll-y class="word-body__scroll">
-        <view v-for="block in meaningBlocks" :key="block.pos" class="pos-block">
-          <text class="pos-block__label">{{ block.pos }}</text>
-          <view class="pos-block__senses">
-            <view
-              v-for="(sense, index) in block.senses"
-              :key="`${block.pos}-${index}`"
-              class="pos-sense"
-            >
-              <view class="pos-sense__badge">
-                <text class="pos-sense__num">{{ index + 1 }}</text>
-              </view>
-              <text class="pos-sense__text">{{ sense.text }}</text>
+    <template v-else>
+      <view class="word-hero">
+        <view class="word-hero__cluster">
+          <text class="word-hero__word">{{ store.currentWord.word }}</text>
+          <view
+            class="word-hero__sound pressable"
+            :class="{ 'word-hero__sound--loading': playing || loading, 'word-hero__sound--playing': playing }"
+            @tap.stop="pronounce"
+          >
+            <view class="wifi-wave">
+              <view class="wifi-wave__arc wifi-wave__arc--1" />
+              <view class="wifi-wave__arc wifi-wave__arc--2" />
+              <view class="wifi-wave__arc wifi-wave__arc--3" />
             </view>
           </view>
         </view>
-        <text v-if="!meaningBlocks.length" class="word-body__empty">暂无释义</text>
-      </scroll-view>
+        <text class="word-hero__phonetic">{{ displayPhonetic || '音标待补充' }}</text>
+      </view>
 
-      <view v-else class="word-mask">
-        <text class="word-mask__title">回忆单词发音和释义</text>
-        <text class="word-mask__hint">点击屏幕显示答案</text>
-      </view>
-    </view>
+      <view class="word-body" @tap="revealAnswer">
+        <scroll-view v-if="revealed" scroll-y class="word-body__scroll">
+          <view v-for="block in meaningBlocks" :key="block.pos" class="pos-block">
+            <text class="pos-block__label">{{ block.pos }}</text>
+            <view class="pos-block__senses">
+              <view
+                v-for="(sense, index) in block.senses"
+                :key="`${block.pos}-${index}`"
+                class="pos-sense"
+              >
+                <view class="pos-sense__badge">
+                  <text class="pos-sense__num">{{ index + 1 }}</text>
+                </view>
+                <text class="pos-sense__text">{{ sense.text }}</text>
+              </view>
+            </view>
+          </view>
+          <text v-if="!meaningBlocks.length" class="word-body__empty">暂无释义</text>
+        </scroll-view>
 
-    <view v-if="revealed" class="recall-dock">
-      <view class="recall-btn recall-btn--know" @tap="mark('know')">
-        <text class="recall-btn__label">认识</text>
+        <view v-else class="word-mask">
+          <text class="word-mask__title">回忆单词发音和释义</text>
+          <text class="word-mask__hint">点击屏幕显示答案</text>
+        </view>
       </view>
-      <view class="recall-btn recall-btn--fuzzy" @tap="mark('fuzzy')">
-        <text class="recall-btn__label">模糊</text>
+
+      <view v-if="revealed" class="recall-dock">
+        <view class="recall-btn recall-btn--know" @tap="mark('know')">
+          <text class="recall-btn__label">认识</text>
+        </view>
+        <view class="recall-btn recall-btn--fuzzy" @tap="mark('fuzzy')">
+          <text class="recall-btn__label">模糊</text>
+        </view>
+        <view class="recall-btn recall-btn--forgot" @tap="mark('forgot')">
+          <text class="recall-btn__label">忘记</text>
+        </view>
       </view>
-      <view class="recall-btn recall-btn--forgot" @tap="mark('forgot')">
-        <text class="recall-btn__label">忘记</text>
-      </view>
-    </view>
+    </template>
 
     <BottomNav active="semantic" />
   </view>
@@ -192,7 +297,75 @@ $mask: #d5e8df;
   position: absolute;
   z-index: 5;
   top: calc(env(safe-area-inset-top) + 12px);
+  left: 16px;
   right: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.word-topbar__session {
+  margin-right: auto;
+  color: #6e786f;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.wait-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: calc(env(safe-area-inset-top) + 72px) 28px 40px;
+  box-sizing: border-box;
+}
+
+.wait-panel__title {
+  color: #1f4d3a;
+  font-size: 22px;
+  font-weight: 800;
+}
+
+.wait-panel__desc {
+  margin-top: 12px;
+  color: #6e786f;
+  font-size: 14px;
+  line-height: 1.6;
+  text-align: center;
+}
+
+.wait-panel__clock {
+  margin-top: 28px;
+  color: #1f2421;
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+}
+
+.wait-panel__meta {
+  margin-top: 10px;
+  color: #8b9288;
+  font-size: 12px;
+}
+
+.wait-panel__btn {
+  margin-top: 28px;
+  width: 100%;
+  max-width: 260px;
+  height: 46px;
+  color: #fff;
+  background: #1f4d3a;
+  border: 0;
+  border-radius: 14px;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 46px;
+}
+
+.wait-panel__btn::after {
+  border: 0;
 }
 
 .ko-btn {

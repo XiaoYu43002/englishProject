@@ -22,6 +22,7 @@
     "build:h5": "uni build",
     "build:mp-weixin": "uni build -p mp-weixin",
     "build:app": "uni build -p app",
+    "test:scheduler": "npx --yes tsx scripts/test-short-term-scheduler.ts",
     "type-check": "vue-tsc --noEmit"
   },
   "dependencies": {
