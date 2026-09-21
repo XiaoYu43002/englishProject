@@ -2,13 +2,24 @@
 import { computed, ref } from 'vue'
 import BottomNav from '@/components/BottomNav.vue'
 import { useLearningStore } from '@/stores/learning'
+import {
+  usePronunciationStore,
+  DISPLAY_SIZE_PRESETS,
+  type DisplaySize,
+} from '@/stores/pronunciation'
 
 const PRESETS = [10, 20, 30, 50, 100]
 
 const store = useLearningStore()
+const pronunciation = usePronunciationStore()
 const bookId = ref(store.selectedBookId)
 const dailyTarget = ref(store.todayTarget || 20)
 const saving = ref(false)
+
+const sizeOptions = (Object.keys(DISPLAY_SIZE_PRESETS) as DisplaySize[]).map((id) => ({
+  id,
+  ...DISPLAY_SIZE_PRESETS[id],
+}))
 
 const selectedBook = computed(
   () => store.books.find((book) => book.id === bookId.value) || store.activeBook,
@@ -38,6 +49,10 @@ function onInputTarget(event: { detail?: { value?: string } }) {
   const raw = Number(event.detail?.value || dailyTarget.value)
   if (!Number.isFinite(raw)) return
   dailyTarget.value = Math.min(200, Math.max(1, Math.round(raw)))
+}
+
+function selectDisplaySize(size: DisplaySize) {
+  pronunciation.setDisplaySize(size)
 }
 
 async function save() {
@@ -119,6 +134,21 @@ async function save() {
       <view class="stepper__btn pressable" @tap="bump(5)">+5</view>
     </view>
     <text class="hint">保存后将按新计划重新生成今日短时学习队列（1–200）。</text>
+
+    <text class="section-label">学习页字号</text>
+    <text class="size-hint">调整单词、音标与发音图标大小（音标最小 13px，点选即生效）</text>
+    <view class="size-row">
+      <view
+        v-for="item in sizeOptions"
+        :key="item.id"
+        class="size-chip pressable"
+        :class="{ 'size-chip--on': pronunciation.displaySize === item.id }"
+        @tap="selectDisplaySize(item.id)"
+      >
+        <text class="size-chip__title">{{ item.label }}</text>
+        <text class="size-chip__desc">词 {{ item.word }}</text>
+      </view>
+    </view>
 
     <button class="save-button pressable" :disabled="saving" @tap="save">
       {{ saving ? '保存中…' : '保存学习计划' }}
@@ -312,6 +342,51 @@ async function save() {
   color: #8b9288;
   font-size: 12px;
   line-height: 1.5;
+}
+
+.size-hint {
+  display: block;
+  margin-top: 6px;
+  margin-bottom: 10px;
+  color: #8b9288;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.size-row {
+  display: flex;
+  gap: 8px;
+}
+
+.size-chip {
+  flex: 1;
+  min-height: 58px;
+  padding: 10px 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  color: #315444;
+  background: #f8f5ec;
+  border: 1px solid #d8d7ca;
+  border-radius: 12px;
+}
+
+.size-chip--on {
+  color: #fffdf5;
+  background: #285c48;
+  border-color: #285c48;
+}
+
+.size-chip__title {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.size-chip__desc {
+  font-size: 11px;
+  opacity: 0.85;
 }
 
 .save-button {

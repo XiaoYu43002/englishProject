@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 
 export type AudioAccent = 'us' | 'uk'
+export type DisplaySize = 'small' | 'medium' | 'large'
 
 export interface VoiceOption {
   id: string
@@ -22,6 +23,16 @@ export const VOICE_OPTIONS: Record<AudioAccent, VoiceOption[]> = {
   ],
 }
 
+/** 学习页展示尺寸（音标最小 13px） */
+export const DISPLAY_SIZE_PRESETS: Record<
+  DisplaySize,
+  { label: string; word: number; phonetic: number; icon: number }
+> = {
+  small: { label: '偏小', word: 28, phonetic: 13, icon: 24 },
+  medium: { label: '适中', word: 32, phonetic: 15, icon: 28 },
+  large: { label: '偏大', word: 36, phonetic: 16, icon: 32 },
+}
+
 const STORAGE_KEY = 'zhimi-pronunciation'
 
 function loadSettings() {
@@ -29,10 +40,13 @@ function loadSettings() {
   const accent: AudioAccent = raw.accent === 'us' ? 'us' : 'uk'
   const usIds = new Set(VOICE_OPTIONS.us.map((item) => item.id))
   const ukIds = new Set(VOICE_OPTIONS.uk.map((item) => item.id))
+  const displaySize: DisplaySize =
+    raw.displaySize === 'medium' || raw.displaySize === 'large' ? raw.displaySize : 'small'
   return {
     accent,
     voiceUs: usIds.has(raw.voiceUs) ? raw.voiceUs : VOICE_OPTIONS.us[0].id,
     voiceUk: ukIds.has(raw.voiceUk) ? raw.voiceUk : VOICE_OPTIONS.uk[0].id,
+    displaySize,
   }
 }
 
@@ -49,6 +63,12 @@ export const usePronunciationStore = defineStore('pronunciation', {
     accentLabel(): string {
       return this.accent === 'uk' ? '英式' : '美式'
     },
+    accentTag(): string {
+      return this.accent === 'uk' ? '英' : '美'
+    },
+    displayMetrics() {
+      return DISPLAY_SIZE_PRESETS[this.displaySize] || DISPLAY_SIZE_PRESETS.small
+    },
   },
   actions: {
     persist() {
@@ -56,6 +76,7 @@ export const usePronunciationStore = defineStore('pronunciation', {
         accent: this.accent,
         voiceUs: this.voiceUs,
         voiceUk: this.voiceUk,
+        displaySize: this.displaySize,
       })
     },
     setAccent(accent: AudioAccent) {
@@ -67,6 +88,11 @@ export const usePronunciationStore = defineStore('pronunciation', {
       if (!allowed.has(voiceId)) return
       if (accent === 'uk') this.voiceUk = voiceId
       else this.voiceUs = voiceId
+      this.persist()
+    },
+    setDisplaySize(size: DisplaySize) {
+      if (!DISPLAY_SIZE_PRESETS[size]) return
+      this.displaySize = size
       this.persist()
     },
   },

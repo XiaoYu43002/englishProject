@@ -42,10 +42,12 @@ const rawMeanings = computed(() => {
 
 const meaningBlocks = computed(() => buildMeaningBlocks(rawMeanings.value))
 
-const sessionHint = computed(() => {
+const sessionProgress = computed(() => {
   const stats = store.shortTermStats
-  if (!store.shortTermSession) return ''
-  return `今日 ${stats.graduated}/${stats.total} · 在学 ${stats.learning}`
+  const total = stats.total || store.todayTarget || 0
+  const done = stats.graduated || 0
+  const percent = total > 0 ? Math.min(100, Math.round((done / total) * 100)) : 0
+  return { done, total, percent, learning: stats.learning }
 })
 
 const waitLabel = computed(() => {
@@ -184,7 +186,12 @@ async function markAsKo() {
 <template>
   <view class="word-page" :class="{ 'word-page--revealed': revealed && !store.sessionWaiting }">
     <view class="word-topbar">
-      <text v-if="sessionHint" class="word-topbar__session">{{ sessionHint }}</text>
+      <view v-if="store.shortTermSession" class="session-progress">
+        <view class="session-progress__track">
+          <view class="session-progress__fill" :style="{ width: `${sessionProgress.percent}%` }" />
+          <text class="session-progress__text">{{ sessionProgress.done }}/{{ sessionProgress.total }}</text>
+        </view>
+      </view>
       <view
         class="ko-btn pressable"
         :class="{ 'ko-btn--on': store.isCurrentWordKo }"
@@ -208,21 +215,43 @@ async function markAsKo() {
 
     <template v-else>
       <view class="word-hero">
-        <view class="word-hero__cluster">
-          <text class="word-hero__word">{{ store.currentWord.word }}</text>
+        <view class="word-hero__word-anchor">
+          <text
+            class="word-hero__word"
+            :style="{
+              fontSize: `${pronunciation.displayMetrics.word}px`,
+              lineHeight: `${pronunciation.displayMetrics.word}px`,
+            }"
+          >{{ store.currentWord.word }}</text>
           <view
             class="word-hero__sound pressable"
             :class="{ 'word-hero__sound--loading': playing || loading, 'word-hero__sound--playing': playing }"
+            :style="{
+              width: `${pronunciation.displayMetrics.icon}px`,
+              height: `${pronunciation.displayMetrics.icon}px`,
+            }"
             @tap.stop="pronounce"
           >
-            <view class="wifi-wave">
+            <view
+              class="wifi-wave"
+              :style="{
+                width: `${pronunciation.displayMetrics.icon}px`,
+                height: `${pronunciation.displayMetrics.icon}px`,
+              }"
+            >
               <view class="wifi-wave__arc wifi-wave__arc--1" />
               <view class="wifi-wave__arc wifi-wave__arc--2" />
               <view class="wifi-wave__arc wifi-wave__arc--3" />
             </view>
           </view>
         </view>
-        <text class="word-hero__phonetic">{{ displayPhonetic || '音标待补充' }}</text>
+        <view class="word-hero__phonetic-anchor">
+          <text
+            class="word-hero__phonetic"
+            :style="{ fontSize: `${pronunciation.displayMetrics.phonetic}px` }"
+          >{{ displayPhonetic || '音标待补充' }}</text>
+          <text class="word-hero__accent">{{ pronunciation.accentTag }}</text>
+        </view>
       </view>
 
       <view class="word-body" @tap="revealAnswer">
@@ -296,7 +325,7 @@ $mask: #d5e8df;
 .word-topbar {
   position: absolute;
   z-index: 5;
-  top: calc(env(safe-area-inset-top) + 12px);
+  top: calc(env(safe-area-inset-top) + 28px);
   left: 16px;
   right: 16px;
   display: flex;
@@ -305,11 +334,43 @@ $mask: #d5e8df;
   gap: 10px;
 }
 
-.word-topbar__session {
+.session-progress {
   margin-right: auto;
-  color: #6e786f;
+  display: flex;
+  align-items: center;
+}
+
+.session-progress__track {
+  position: relative;
+  width: 112px;
+  height: 28px;
+  overflow: hidden;
+  border: 1.5px solid rgba(31, 77, 58, 0.35);
+  border-radius: 999px;
+  background: rgba(255, 253, 248, 0.92);
+}
+
+.session-progress__fill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  background: linear-gradient(90deg, #d7e5dc, #9fbfab);
+  border-radius: 999px;
+  transition: width 220ms ease;
+}
+
+.session-progress__text {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: #1f4d3a;
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 700;
+  letter-spacing: 0.3px;
 }
 
 .wait-panel {
@@ -397,7 +458,7 @@ $mask: #d5e8df;
 }
 
 .word-hero {
-  padding: calc(env(safe-area-inset-top) + 48px) 28px 28px;
+  padding: calc(env(safe-area-inset-top) + 72px) 28px 14px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -405,17 +466,16 @@ $mask: #d5e8df;
   position: relative;
 }
 
-.word-hero__cluster {
+.word-hero__word-anchor {
   position: relative;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+  display: inline-block;
 }
 
 .word-hero__word {
+  display: block;
   color: $ink;
-  font-size: 42px;
-  line-height: 50px;
+  font-size: 28px;
+  line-height: 28px;
   font-weight: 700;
   letter-spacing: 0.4px;
   text-align: center;
@@ -423,30 +483,30 @@ $mask: #d5e8df;
 
 .word-hero__sound {
   position: absolute;
-  /* 与单词水平间隙约为原 7px 的 2/3 */
-  left: calc(100% + 5px);
+  left: 100%;
   top: 50%;
-  /* 略往下，与单词视觉中线对齐 */
-  transform: translateY(calc(-50% + 5px));
-  width: 36px;
-  height: 36px;
+  margin-left: 6px;
+  transform: translateY(-50%);
+  width: 24px;
+  height: 24px;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-/* 朝右三层波浪：短 → 长 */
+/* 朝右三层波浪：短 → 长，按容器比例居中 */
 .wifi-wave {
   position: relative;
-  width: 26px;
-  height: 24px;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
 }
 
 .wifi-wave__arc {
   position: absolute;
   top: 50%;
-  left: 0;
-  border: 2.5px solid $green;
+  left: 8%;
+  border-style: solid;
   border-color: transparent $green transparent transparent;
   border-radius: 50%;
   box-sizing: border-box;
@@ -454,18 +514,21 @@ $mask: #d5e8df;
 }
 
 .wifi-wave__arc--1 {
-  width: 12px;
-  height: 12px;
+  width: 38%;
+  height: 38%;
+  border-width: 2px;
 }
 
 .wifi-wave__arc--2 {
-  width: 19px;
-  height: 19px;
+  width: 62%;
+  height: 62%;
+  border-width: 2px;
 }
 
 .wifi-wave__arc--3 {
-  width: 26px;
-  height: 26px;
+  width: 86%;
+  height: 86%;
+  border-width: 2.5px;
 }
 
 .word-hero__sound--loading {
@@ -486,11 +549,36 @@ $mask: #d5e8df;
   50% { opacity: 1; }
 }
 
+.word-hero__phonetic-anchor {
+  position: relative;
+  margin-top: 2px;
+  display: inline-block;
+}
+
+.word-hero__accent {
+  position: absolute;
+  left: 100%;
+  top: 50%;
+  margin-left: 6px;
+  transform: translateY(-50%);
+  height: 20px;
+  padding: 0 7px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #1f4d3a;
+  background: rgba(31, 77, 58, 0.1);
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
+}
+
 .word-hero__phonetic {
-  /* 单词与音标间距减半 */
-  margin-top: 6px;
+  display: block;
   color: #8a9188;
-  font-size: 16px;
+  font-size: 15px;
   line-height: 22px;
   text-align: center;
 }
