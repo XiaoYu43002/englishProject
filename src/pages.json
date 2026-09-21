@@ -12,6 +12,7 @@
     { "path": "pages/sentence/index", "style": { "navigationStyle": "custom" } },
     { "path": "pages/profile/index", "style": { "navigationStyle": "custom" } },
     { "path": "pages/pronunciation-settings/index", "style": { "navigationStyle": "custom" } },
+    { "path": "pages/more-settings/index", "style": { "navigationStyle": "custom" } },
     { "path": "pages/learning-plan/index", "style": { "navigationStyle": "custom" } },
     { "path": "pages/scan-history/index", "style": { "navigationStyle": "custom" } }
   ],

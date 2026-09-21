@@ -79,7 +79,15 @@ function goScan() {
             </text>
             <text class="record-card__time">{{ formatTime(record.createdAt) }}</text>
           </view>
-          <text class="record-card__preview">{{ previewWords(record) }}</text>
+          <view class="record-card__preview-row">
+            <text class="record-card__preview">{{ previewWords(record) }}</text>
+            <image
+              class="record-card__chevron"
+              :class="{ 'record-card__chevron--open': expandedId === record.id }"
+              src="/static/icons/chevron-down.svg"
+              mode="aspectFit"
+            />
+          </view>
         </view>
 
         <view v-if="expandedId === record.id" class="record-card__body">
@@ -216,13 +224,32 @@ function goScan() {
   white-space: nowrap;
 }
 
+.record-card__preview-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .record-card__preview {
+  flex: 1;
+  min-width: 0;
   color: #6e786f;
   font-size: 13px;
   line-height: 20px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.record-card__chevron {
+  width: 18px;
+  height: 18px;
+  flex: none;
+  transition: transform 180ms ease;
+}
+
+.record-card__chevron--open {
+  transform: rotate(180deg);
 }
 
 .record-card__body {

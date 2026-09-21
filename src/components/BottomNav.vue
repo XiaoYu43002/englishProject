@@ -47,8 +47,23 @@ const items: Array<{
   },
 ]
 
-function navigate(key: NavKey, url: string) {
-  if (key === props.active) return
+function currentRoute() {
+  const pages = getCurrentPages()
+  const current = pages[pages.length - 1] as { route?: string } | undefined
+  return current?.route ? `/${current.route}` : ''
+}
+
+function navigate(url: string) {
+  const route = currentRoute()
+  if (route === url) return
+
+  const pages = getCurrentPages()
+  const target = url.replace(/^\//, '')
+  const index = pages.findIndex((page) => page.route === target)
+  if (index >= 0 && index < pages.length - 1) {
+    uni.navigateBack({ delta: pages.length - 1 - index })
+    return
+  }
   uni.redirectTo({ url })
 }
 </script>
@@ -60,7 +75,7 @@ function navigate(key: NavKey, url: string) {
       :key="item.key"
       class="bottom-nav__item"
       :class="{ 'bottom-nav__item--active': item.key === active }"
-      @tap="navigate(item.key, item.url)"
+      @tap="navigate(item.url)"
     >
       <view class="bottom-nav__icon-slot">
         <image

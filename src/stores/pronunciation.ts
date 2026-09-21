@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 
 export type AudioAccent = 'us' | 'uk'
 export type DisplaySize = 'small' | 'medium' | 'large'
+export type AccentTagStyle = 'en' | 'zh'
 
 export interface VoiceOption {
   id: string
@@ -42,11 +43,14 @@ function loadSettings() {
   const ukIds = new Set(VOICE_OPTIONS.uk.map((item) => item.id))
   const displaySize: DisplaySize =
     raw.displaySize === 'medium' || raw.displaySize === 'large' ? raw.displaySize : 'small'
+  const accentTagStyle: AccentTagStyle = raw.accentTagStyle === 'zh' ? 'zh' : 'en'
   return {
     accent,
     voiceUs: usIds.has(raw.voiceUs) ? raw.voiceUs : VOICE_OPTIONS.us[0].id,
     voiceUk: ukIds.has(raw.voiceUk) ? raw.voiceUk : VOICE_OPTIONS.uk[0].id,
     displaySize,
+    accentTagVisible: raw.accentTagVisible !== false,
+    accentTagStyle,
   }
 }
 
@@ -64,7 +68,8 @@ export const usePronunciationStore = defineStore('pronunciation', {
       return this.accent === 'uk' ? '英式' : '美式'
     },
     accentTag(): string {
-      return this.accent === 'uk' ? '英' : '美'
+      if (this.accentTagStyle === 'zh') return this.accent === 'uk' ? '英' : '美'
+      return this.accent === 'uk' ? 'UK' : 'US'
     },
     displayMetrics() {
       return DISPLAY_SIZE_PRESETS[this.displaySize] || DISPLAY_SIZE_PRESETS.small
@@ -77,6 +82,8 @@ export const usePronunciationStore = defineStore('pronunciation', {
         voiceUs: this.voiceUs,
         voiceUk: this.voiceUk,
         displaySize: this.displaySize,
+        accentTagVisible: this.accentTagVisible,
+        accentTagStyle: this.accentTagStyle,
       })
     },
     setAccent(accent: AudioAccent) {
@@ -93,6 +100,14 @@ export const usePronunciationStore = defineStore('pronunciation', {
     setDisplaySize(size: DisplaySize) {
       if (!DISPLAY_SIZE_PRESETS[size]) return
       this.displaySize = size
+      this.persist()
+    },
+    setAccentTagVisible(visible: boolean) {
+      this.accentTagVisible = visible
+      this.persist()
+    },
+    setAccentTagStyle(style: AccentTagStyle) {
+      this.accentTagStyle = style === 'zh' ? 'zh' : 'en'
       this.persist()
     },
   },

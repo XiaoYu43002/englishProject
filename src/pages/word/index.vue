@@ -192,6 +192,7 @@ async function markAsKo() {
           <text class="session-progress__text">{{ sessionProgress.done }}/{{ sessionProgress.total }}</text>
         </view>
       </view>
+      <text v-if="pronunciation.accentTagVisible" class="accent-tag">{{ pronunciation.accentTag }}</text>
       <view
         class="ko-btn pressable"
         :class="{ 'ko-btn--on': store.isCurrentWordKo }"
@@ -250,7 +251,6 @@ async function markAsKo() {
             class="word-hero__phonetic"
             :style="{ fontSize: `${pronunciation.displayMetrics.phonetic}px` }"
           >{{ displayPhonetic || '音标待补充' }}</text>
-          <text class="word-hero__accent">{{ pronunciation.accentTag }}</text>
         </view>
       </view>
 
@@ -331,7 +331,7 @@ $mask: #d5e8df;
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 10px;
+  gap: 8px;
 }
 
 .session-progress {
@@ -429,6 +429,21 @@ $mask: #d5e8df;
   border: 0;
 }
 
+.accent-tag {
+  height: 32px;
+  padding: 0 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #1f4d3a;
+  background: rgba(31, 77, 58, 0.1);
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.4px;
+}
+
 .ko-btn {
   min-width: 40px;
   height: 32px;
@@ -486,7 +501,8 @@ $mask: #d5e8df;
   left: 100%;
   top: 50%;
   margin-left: 6px;
-  transform: translateY(-50%);
+  /* 行盒几何中线偏上，下移一点才对齐小写字母的视觉中心 */
+  transform: translateY(calc(-50% + 2.5px));
   width: 24px;
   height: 24px;
   display: flex;
@@ -550,29 +566,8 @@ $mask: #d5e8df;
 }
 
 .word-hero__phonetic-anchor {
-  position: relative;
   margin-top: 2px;
   display: inline-block;
-}
-
-.word-hero__accent {
-  position: absolute;
-  left: 100%;
-  top: 50%;
-  margin-left: 6px;
-  transform: translateY(-50%);
-  height: 20px;
-  padding: 0 7px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #1f4d3a;
-  background: rgba(31, 77, 58, 0.1);
-  border-radius: 6px;
-  font-size: 11px;
-  font-weight: 700;
-  line-height: 1;
-  white-space: nowrap;
 }
 
 .word-hero__phonetic {

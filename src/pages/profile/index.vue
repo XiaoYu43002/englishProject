@@ -5,7 +5,7 @@ import BrandLogo from '@/components/BrandLogo.vue'
 import { useLearningStore } from '@/stores/learning'
 
 const store = useLearningStore()
-const menus = ['学习档案', '我的词书', '发音设置', '拍词记录', '学习计划', '设置']
+const menus = ['学习档案', '我的词书', '发音设置', '拍词记录', '学习计划', '更多设置']
 
 const displayName = computed(() => {
   const user = store.authUser
@@ -38,6 +38,10 @@ function openMenu(name: string) {
   }
   if (name === '学习计划' || name === '学习目标') {
     uni.navigateTo({ url: '/pages/learning-plan/index' })
+    return
+  }
+  if (name === '更多设置') {
+    uni.navigateTo({ url: '/pages/more-settings/index' })
     return
   }
   uni.showToast({ title: `${name}待接入`, icon: 'none' })
@@ -93,11 +97,11 @@ function handleLogout() {
     <view class="menu-list">
       <view v-for="menu in menus" :key="menu" class="menu-row card pressable" @tap="openMenu(menu)">
         <text>{{ menu }}</text>
-        <text class="menu-row__arrow">›</text>
+        <image class="menu-row__arrow" src="/static/icons/chevron-right.svg" mode="aspectFit" />
       </view>
       <view class="menu-row card pressable menu-row--logout" @tap="handleLogout">
         <text>{{ store.isLoggedIn ? '退出登录' : '去登录' }}</text>
-        <text class="menu-row__arrow">›</text>
+        <image class="menu-row__arrow" src="/static/icons/chevron-right.svg" mode="aspectFit" />
       </view>
     </view>
 
@@ -190,8 +194,9 @@ function handleLogout() {
 }
 
 .menu-row__arrow {
-  color: #8b938b;
-  font-size: 22px;
+  width: 18px;
+  height: 18px;
+  flex: none;
 }
 
 .menu-row--logout {

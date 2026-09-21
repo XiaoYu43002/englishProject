@@ -29,9 +29,10 @@ function continueLearning() {
   <view class="screen home-screen">
     <text class="home-greeting">下午好，继续今天的学习</text>
     <text class="home-title">今天，先掌握 {{ store.todayTarget }} 个词</text>
-    <text class="home-plan" @tap="go('/pages/learning-plan/index')">
-      {{ store.activeBook.shortTitle }} · 调整学习计划 ›
-    </text>
+    <view class="home-plan" @tap="go('/pages/learning-plan/index')">
+      <text>{{ store.activeBook.shortTitle }} · 调整学习计划</text>
+      <image class="home-plan__arrow" src="/static/icons/chevron-right.svg" mode="aspectFit" />
+    </view>
 
     <view class="today-card card">
       <text class="today-card__label">今日计划</text>
@@ -92,11 +93,19 @@ function continueLearning() {
 }
 
 .home-plan {
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: 2px;
   margin-top: 6px;
   color: #3d7564;
   font-size: 13px;
   font-weight: 600;
+}
+
+.home-plan__arrow {
+  width: 16px;
+  height: 16px;
+  flex: none;
 }
 
 .today-card {

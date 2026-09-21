@@ -67,7 +67,7 @@ function openWord(wordId: string) {
       <view v-else class="word-list card">
         <view v-for="word in filteredWords" :key="word.id" class="word-row pressable" @tap="openWord(word.id)">
           <view class="word-row__main"><text class="word-row__word">{{ word.word }}</text><text class="word-row__meaning">{{ word.meanings[0] || '待补充释义' }}</text></view>
-          <text class="word-row__arrow">›</text>
+          <image class="word-row__arrow" src="/static/icons/chevron-right.svg" mode="aspectFit" />
         </view>
       </view>
     </view>
@@ -111,6 +111,6 @@ function openWord(wordId: string) {
 .word-row__main { min-width: 0; display: flex; flex-direction: column; }
 .word-row__word { color: #1f2421; font-size: 15px; font-weight: 700; }
 .word-row__meaning { max-width: 250px; margin-top: 4px; overflow: hidden; color: #788079; font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
-.word-row__arrow { color: #a4aaa4; font-size: 22px; }
+.word-row__arrow { width: 18px; height: 18px; flex: none; }
 .empty-state { padding: 32px 0; color: #7f897f; text-align: center; }
 </style>
