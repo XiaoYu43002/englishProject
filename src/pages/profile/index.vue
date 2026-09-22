@@ -1,11 +1,13 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
+import AppModal from '@/components/AppModal.vue'
 import BottomNav from '@/components/BottomNav.vue'
 import BrandLogo from '@/components/BrandLogo.vue'
 import { useLearningStore } from '@/stores/learning'
 
 const store = useLearningStore()
 const menus = ['学习档案', '我的词书', '发音设置', '拍词记录', '学习计划', '更多设置']
+const logoutVisible = ref(false)
 
 const displayName = computed(() => {
   const user = store.authUser
@@ -52,15 +54,12 @@ function handleLogout() {
     uni.redirectTo({ url: '/pages/login/index' })
     return
   }
-  uni.showModal({
-    title: '退出登录',
-    content: '确定退出当前账号吗？本地学习进度仍会保留在本机。',
-    success: (res) => {
-      if (!res.confirm) return
-      store.logout()
-      uni.redirectTo({ url: '/pages/login/index' })
-    },
-  })
+  logoutVisible.value = true
+}
+
+function confirmLogout() {
+  store.logout()
+  uni.redirectTo({ url: '/pages/login/index' })
 }
 </script>
 
@@ -104,6 +103,15 @@ function handleLogout() {
         <image class="menu-row__arrow" src="/static/icons/chevron-right.svg" mode="aspectFit" />
       </view>
     </view>
+
+    <AppModal
+      v-model:visible="logoutVisible"
+      title="退出登录"
+      content="确定退出当前账号吗？本地学习进度仍会保留在本机。"
+      confirm-text="确认"
+      cancel-text="取消"
+      @confirm="confirmLogout"
+    />
 
     <BottomNav active="profile" />
   </view>

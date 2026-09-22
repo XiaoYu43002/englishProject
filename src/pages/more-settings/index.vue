@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { ref } from 'vue'
+import AppModal from '@/components/AppModal.vue'
 import BottomNav from '@/components/BottomNav.vue'
 import {
   DISPLAY_SIZE_PRESETS,
@@ -12,8 +14,14 @@ const sizeOptions = (Object.keys(DISPLAY_SIZE_PRESETS) as DisplaySize[]).map((id
   label: DISPLAY_SIZE_PRESETS[id].label,
 }))
 
+const previewVisible = ref(false)
+
 function back() {
   uni.navigateBack()
+}
+
+function openPreview() {
+  previewVisible.value = true
 }
 </script>
 
@@ -80,6 +88,19 @@ function back() {
       </view>
     </view>
 
+    <view class="setting-row card pressable" @tap="openPreview">
+      <text class="setting-row__label">弹窗模板预览</text>
+      <text class="setting-row__arrow">›</text>
+    </view>
+
+    <AppModal
+      v-model:visible="previewVisible"
+      title="请确认"
+      content="请确认阅读并同意用户协议与隐私政策。这是统一弹窗模板预览：标题居中，正文左对齐，底部为取消 / 确认。"
+      confirm-text="确认"
+      cancel-text="取消"
+    />
+
     <BottomNav active="profile" />
   </view>
 </template>
@@ -124,13 +145,18 @@ function back() {
 }
 
 .setting-row {
-  margin-top: 16px;
-  min-height: 56px;
-  padding: 12px 16px;
+  margin-top: 5px;
+  min-height: 44px;
+  padding: 8px 14px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: 10px;
+  border-radius: 12px;
+}
+
+.setting-row:first-of-type {
+  margin-top: 12px;
 }
 
 .setting-row--dim {
@@ -139,29 +165,35 @@ function back() {
 
 .setting-row__label {
   color: #3a403c;
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 500;
+}
+
+.setting-row__arrow {
+  color: #9aa39b;
+  font-size: 18px;
+  line-height: 1;
 }
 
 .segment {
   flex: none;
   display: flex;
   align-items: center;
-  padding: 3px;
+  padding: 2px;
   background: #eceae4;
-  border-radius: 10px;
+  border-radius: 9px;
 }
 
 .segment__item {
-  min-width: 52px;
-  height: 30px;
-  padding: 0 12px;
+  min-width: 48px;
+  height: 26px;
+  padding: 0 10px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 8px;
+  border-radius: 7px;
   color: #5c635e;
-  font-size: 13px;
+  font-size: 12px;
 }
 
 .segment__item--on {

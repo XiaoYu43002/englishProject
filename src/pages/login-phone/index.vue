@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onUnmounted, ref } from 'vue'
+import AppModal from '@/components/AppModal.vue'
 import { loginWithSms, sendSmsCode } from '@/services/auth'
 import { useLearningStore } from '@/stores/learning'
 
@@ -10,7 +11,9 @@ const sending = ref(false)
 const loggingIn = ref(false)
 const agreed = ref(false)
 const cooldown = ref(0)
+const agreeModalVisible = ref(false)
 let timer: ReturnType<typeof setInterval> | undefined
+let pendingSendAfterAgree = false
 
 const canSend = computed(() => /^1\d{10}$/.test(phone.value) && cooldown.value === 0 && !sending.value)
 const canSubmit = computed(() => /^1\d{10}$/.test(phone.value) && /^\d{4,8}$/.test(code.value) && !loggingIn.value)
@@ -44,8 +47,7 @@ function back() {
   uni.redirectTo({ url: '/pages/login/index' })
 }
 
-async function handleSendCode() {
-  if (!canSend.value) return
+async function sendCodeNow() {
   sending.value = true
   try {
     const result = await sendSmsCode(phone.value, 'login')
@@ -59,6 +61,29 @@ async function handleSendCode() {
   } finally {
     sending.value = false
   }
+}
+
+async function handleSendCode() {
+  if (!canSend.value) return
+
+  if (agreed.value) {
+    await sendCodeNow()
+    return
+  }
+
+  pendingSendAfterAgree = true
+  agreeModalVisible.value = true
+}
+
+async function onAgreeConfirm() {
+  agreed.value = true
+  if (!pendingSendAfterAgree) return
+  pendingSendAfterAgree = false
+  await sendCodeNow()
+}
+
+function onAgreeCancel() {
+  pendingSendAfterAgree = false
 }
 
 async function handlePhoneLogin() {
@@ -98,9 +123,7 @@ onUnmounted(() => clearInterval(timer))
       <view class="topbar__space" />
     </view>
 
-    <text class="eyebrow">WELCOME</text>
-    <text class="page-title">用手机号继续</text>
-    <text class="page-subtitle">输入手机号获取验证码，登录后即可建立你的英语语义地图。</text>
+    <text class="login-tip">未注册手机号登录会自动注册</text>
 
     <view class="login-form">
       <view class="field-card">
@@ -133,6 +156,16 @@ onUnmounted(() => clearInterval(timer))
         </text>
       </view>
     </view>
+
+    <AppModal
+      v-model:visible="agreeModalVisible"
+      title="隐私声明"
+      content="请确认阅读并同意用户协议与隐私政策"
+      confirm-text="同意"
+      cancel-text="取消"
+      @confirm="onAgreeConfirm"
+      @cancel="onAgreeCancel"
+    />
   </view>
 </template>
 
@@ -146,7 +179,7 @@ onUnmounted(() => clearInterval(timer))
 }
 
 .topbar {
-  height: 42px;
+  height: 44px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -154,27 +187,42 @@ onUnmounted(() => clearInterval(timer))
 
 .topbar__back,
 .topbar__space {
-  width: 34px;
+  width: 36px;
+  height: 36px;
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .topbar__back {
   color: #1f4d3a;
-  font-size: 34px;
-  line-height: 34px;
+  font-size: 28px;
+  line-height: 1;
+  padding-bottom: 2px;
+  box-sizing: border-box;
 }
 
 .topbar__label {
+  flex: 1;
+  text-align: center;
   color: #1f211f;
   font-size: 16px;
   font-weight: 700;
+  line-height: 36px;
 }
 
-.eyebrow {
-  margin-top: 28px;
+.login-tip {
+  display: block;
+  margin-top: 24px;
+  color: #3d7564;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.5;
 }
 
 .login-form {
-  margin-top: 28px;
+  margin-top: 20px;
 }
 
 .field-card {
@@ -236,7 +284,7 @@ onUnmounted(() => clearInterval(timer))
 }
 
 .agreement {
-  margin-top: 32px;
+  margin-top: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
