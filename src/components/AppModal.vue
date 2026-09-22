@@ -50,7 +50,7 @@ function onConfirm() {
   <view v-if="visible" class="app-modal" @tap="onMask">
     <view class="app-modal__panel" @tap.stop>
       <text class="app-modal__title">{{ title }}</text>
-      <text class="app-modal__body">{{ content }}</text>
+      <view class="app-modal__body">{{ content }}</view>
       <view class="app-modal__actions" :class="{ 'app-modal__actions--single': !showCancel }">
         <view
           v-if="showCancel"
@@ -75,15 +75,15 @@ function onConfirm() {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 28px;
+  padding: 40px;
   background: rgba(31, 36, 33, 0.42);
   box-sizing: border-box;
 }
 
 .app-modal__panel {
   width: 100%;
-  max-width: 320px;
-  padding: 22px 20px 16px;
+  max-width: 268px;
+  padding: 20px 18px 14px;
   background: #fffdf8;
   border: 1px solid #e0dccf;
   border-radius: 18px;
@@ -106,23 +106,27 @@ function onConfirm() {
   font-size: 14px;
   line-height: 1.65;
   text-align: left;
+  text-indent: 0;
   white-space: pre-wrap;
   word-break: break-word;
 }
 
 .app-modal__actions {
-  margin-top: 20px;
+  margin-top: 18px;
   display: flex;
+  justify-content: center;
   gap: 10px;
 }
 
 .app-modal__actions--single .app-modal__btn {
-  flex: 1;
+  flex: none;
+  width: 112px;
 }
 
 .app-modal__btn {
-  flex: 1;
-  height: 42px;
+  flex: none;
+  width: 96px;
+  height: 38px;
   display: flex;
   align-items: center;
   justify-content: center;

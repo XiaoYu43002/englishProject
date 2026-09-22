@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { loginWithWechatCode, uniLoginWechat } from '@/services/auth'
+import { navigateAfterLogin } from '@/stores/learnerProfile'
 import { useLearningStore } from '@/stores/learning'
 
 const store = useLearningStore()
@@ -41,7 +42,7 @@ async function handleWechatLogin() {
     const jsCode = await uniLoginWechat()
     const result = await loginWithWechatCode(jsCode)
     store.login('wechat', { token: result.token, user: result.user })
-    uni.redirectTo({ url: '/pages/home/index' })
+    navigateAfterLogin()
   } catch (error) {
     uni.showToast({ title: error instanceof Error ? error.message : '微信登录失败', icon: 'none' })
   } finally {

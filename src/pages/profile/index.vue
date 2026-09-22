@@ -26,6 +26,10 @@ const planHint = computed(
 )
 
 function openMenu(name: string) {
+  if (name === '学习档案') {
+    uni.navigateTo({ url: '/pages/learner-profile/index?from=menu' })
+    return
+  }
   if (name === '我的词书') {
     uni.navigateTo({ url: '/pages/books/index' })
     return

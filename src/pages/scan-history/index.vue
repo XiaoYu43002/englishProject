@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import BottomNav from '@/components/BottomNav.vue'
+import PageHeader from '@/components/PageHeader.vue'
 import { useLearningStore } from '@/stores/learning'
 import type { ScanHistoryRecord } from '@/types/domain'
 
@@ -50,15 +51,15 @@ function goScan() {
 
 <template>
   <view class="screen history-screen">
-    <view class="history-header">
-      <view class="history-header__back pressable" @tap="back">‹</view>
-      <text class="history-header__title">拍词记录</text>
-      <text
-        class="history-header__action"
-        :class="{ 'history-header__action--muted': !records.length }"
-        @tap="clearAll"
-      >清空</text>
-    </view>
+    <PageHeader title="拍词记录" @back="back">
+      <template #right>
+        <text
+          class="history-header__action"
+          :class="{ 'history-header__action--muted': !records.length }"
+          @tap="clearAll"
+        >清空</text>
+      </template>
+    </PageHeader>
 
     <view v-if="!records.length" class="empty-card card">
       <text class="empty-card__title">还没有拍词记录</text>
@@ -117,35 +118,13 @@ function goScan() {
   padding-bottom: 116px;
 }
 
-.history-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.history-header__back {
-  width: 36px;
-  height: 36px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #1f4d3a;
-  font-size: 28px;
-  line-height: 1;
-}
-
-.history-header__title {
-  color: #1f2421;
-  font-size: 17px;
-  font-weight: 700;
-}
-
 .history-header__action {
   min-width: 36px;
   color: #1f4d3a;
   font-size: 13px;
   font-weight: 700;
   text-align: right;
+  line-height: 36px;
 }
 
 .history-header__action--muted {

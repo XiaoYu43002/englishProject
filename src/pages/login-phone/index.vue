@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { computed, onUnmounted, ref } from 'vue'
 import AppModal from '@/components/AppModal.vue'
+import PageHeader from '@/components/PageHeader.vue'
 import { loginWithSms, sendSmsCode } from '@/services/auth'
+import { navigateAfterLogin } from '@/stores/learnerProfile'
 import { useLearningStore } from '@/stores/learning'
 
 const store = useLearningStore()
@@ -96,7 +98,7 @@ async function handlePhoneLogin() {
   try {
     const result = await loginWithSms(phone.value, code.value)
     store.login('phone', { token: result.token, user: result.user })
-    uni.redirectTo({ url: '/pages/home/index' })
+    navigateAfterLogin()
   } catch (error) {
     uni.showToast({ title: error instanceof Error ? error.message : '登录失败', icon: 'none' })
   } finally {
@@ -117,11 +119,7 @@ onUnmounted(() => clearInterval(timer))
 
 <template>
   <view class="screen phone-login-screen">
-    <view class="topbar">
-      <view class="topbar__back pressable" @tap="back">‹</view>
-      <text class="topbar__label">手机号登录</text>
-      <view class="topbar__space" />
-    </view>
+    <PageHeader title="手机号登录" @back="back" />
 
     <text class="login-tip">未注册手机号登录会自动注册</text>
 
@@ -176,40 +174,6 @@ onUnmounted(() => clearInterval(timer))
   display: flex;
   flex-direction: column;
   background: #f8f6f1;
-}
-
-.topbar {
-  height: 44px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.topbar__back,
-.topbar__space {
-  width: 36px;
-  height: 36px;
-  flex: none;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.topbar__back {
-  color: #1f4d3a;
-  font-size: 28px;
-  line-height: 1;
-  padding-bottom: 2px;
-  box-sizing: border-box;
-}
-
-.topbar__label {
-  flex: 1;
-  text-align: center;
-  color: #1f211f;
-  font-size: 16px;
-  font-weight: 700;
-  line-height: 36px;
 }
 
 .login-tip {

@@ -3,6 +3,7 @@
     { "path": "pages/splash/index", "style": { "navigationStyle": "custom" } },
     { "path": "pages/login/index", "style": { "navigationStyle": "custom" } },
     { "path": "pages/login-phone/index", "style": { "navigationStyle": "custom" } },
+    { "path": "pages/learner-profile/index", "style": { "navigationStyle": "custom" } },
     { "path": "pages/home/index", "style": { "navigationStyle": "custom" } },
     { "path": "pages/semantic/index", "style": { "navigationStyle": "custom" } },
     { "path": "pages/books/index", "style": { "navigationStyle": "custom" } },

@@ -2,6 +2,7 @@
 import { ref } from 'vue'
 import AppModal from '@/components/AppModal.vue'
 import BottomNav from '@/components/BottomNav.vue'
+import PageHeader from '@/components/PageHeader.vue'
 import {
   DISPLAY_SIZE_PRESETS,
   usePronunciationStore,
@@ -27,11 +28,7 @@ function openPreview() {
 
 <template>
   <view class="screen settings-screen">
-    <view class="settings-header">
-      <view class="settings-header__back pressable" @tap="back">‹</view>
-      <text class="settings-header__title">更多设置</text>
-      <view class="settings-header__space" />
-    </view>
+    <PageHeader title="更多设置" @back="back" />
 
     <view class="setting-row card">
       <text class="setting-row__label">发音显示</text>
@@ -109,39 +106,6 @@ function openPreview() {
 .settings-screen {
   padding-top: calc(env(safe-area-inset-top) + 18px);
   padding-bottom: 116px;
-}
-
-.settings-header {
-  height: 44px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.settings-header__back,
-.settings-header__space {
-  width: 36px;
-  height: 36px;
-  flex: none;
-}
-
-.settings-header__back {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #1f4d3a;
-  font-size: 28px;
-  line-height: 1;
-  padding-bottom: 2px;
-}
-
-.settings-header__title {
-  flex: 1;
-  text-align: center;
-  font-size: 16px;
-  font-weight: 700;
-  line-height: 36px;
-  color: #1f2421;
 }
 
 .setting-row {

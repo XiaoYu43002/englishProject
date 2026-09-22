@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted } from 'vue'
 import BrandLogo from '@/components/BrandLogo.vue'
+import { useLearnerProfileStore } from '@/stores/learnerProfile'
 import { useLearningStore } from '@/stores/learning'
 
 const sloganChars = ['让', '单', '词', '有', '迹', '可', '循']
@@ -10,7 +11,14 @@ let timer: ReturnType<typeof setTimeout> | undefined
 function enter() {
   if (timer) clearTimeout(timer)
   const store = useLearningStore()
-  uni.redirectTo({ url: store.isLoggedIn ? '/pages/home/index' : '/pages/login/index' })
+  if (!store.isLoggedIn) {
+    uni.redirectTo({ url: '/pages/login/index' })
+    return
+  }
+  const profile = useLearnerProfileStore()
+  uni.redirectTo({
+    url: profile.needsOnboarding ? '/pages/learner-profile/index' : '/pages/home/index',
+  })
 }
 
 onMounted(() => {

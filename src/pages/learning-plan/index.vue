@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import BottomNav from '@/components/BottomNav.vue'
+import PageHeader from '@/components/PageHeader.vue'
 import { useLearningStore } from '@/stores/learning'
 
 const PRESETS = [10, 20, 30, 50, 100]
@@ -62,11 +63,7 @@ async function save() {
 
 <template>
   <view class="screen plan-screen">
-    <view class="plan-header">
-      <view class="plan-header__back pressable" @tap="back">‹</view>
-      <text class="plan-header__title">学习计划</text>
-      <view class="plan-header__space" />
-    </view>
+    <PageHeader title="学习计划" @back="back" />
 
     <text class="plan-lead">选择当前词书，并设定今天希望新学的单词数量。</text>
 
@@ -132,30 +129,6 @@ async function save() {
 .plan-screen {
   padding-top: calc(env(safe-area-inset-top) + 18px);
   padding-bottom: 116px;
-}
-
-.plan-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.plan-header__back,
-.plan-header__space {
-  width: 36px;
-  height: 36px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #1f4d3a;
-  font-size: 28px;
-  line-height: 1;
-}
-
-.plan-header__title {
-  color: #1f2421;
-  font-size: 17px;
-  font-weight: 700;
 }
 
 .plan-lead {

@@ -2,6 +2,7 @@
 import { computed, ref } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import BottomNav from '@/components/BottomNav.vue'
+import PageHeader from '@/components/PageHeader.vue'
 import { useLearningStore } from '@/stores/learning'
 
 const store = useLearningStore()
@@ -37,11 +38,7 @@ function openWord(wordId: string) {
 
 <template>
   <view class="screen book-detail-screen">
-    <view class="topbar">
-      <view class="topbar__back pressable" @tap="back">‹</view>
-      <text class="topbar__label">词书详情</text>
-      <view class="topbar__space" />
-    </view>
+    <PageHeader title="词书详情" @back="back" />
 
     <view class="book-hero" :style="{ background: store.activeBook.accent }">
       <text class="book-hero__eyebrow">{{ store.activeBook.level }}</text>
@@ -82,10 +79,6 @@ function openWord(wordId: string) {
   padding-bottom: 116px;
   overflow: visible;
 }
-.topbar { height: 42px; display: flex; align-items: center; justify-content: space-between; }
-.topbar__back, .topbar__space { width: 34px; }
-.topbar__back { color: #1f4d3a; font-size: 34px; line-height: 34px; }
-.topbar__label { font-size: 14px; font-weight: 700; }
 .book-hero { margin-top: 12px; padding: 24px 22px 20px; border-radius: 24px; color: #fff; box-shadow: 0 15px 32px rgba(31,77,58,.18); }
 .book-hero__eyebrow, .book-hero__title, .book-hero__desc { display: block; }
 .book-hero__eyebrow { font-size: 10px; letter-spacing: 1px; opacity: .72; }
